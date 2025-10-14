@@ -1,0 +1,257 @@
+package com.mas.masServer.service;
+
+import com.mas.masServer.dto.CustomUserProfileDTO;
+import com.mas.masServer.dto.SecurityAnswerRequest;
+// import com.mas.masServer.dto.UserProfileResponse;
+import com.mas.masServer.dto.UserRegisterRequest;
+import com.mas.masServer.dto.UserRegisterResponse;
+import com.mas.masServer.dto.UserUpdateRequest;
+import com.mas.masServer.entity.OTP;
+import com.mas.masServer.entity.SecurityQuestion;
+import com.mas.masServer.entity.SystemRole;
+import com.mas.masServer.entity.User;
+import com.mas.masServer.entity.UserSecurityAnswer;
+import com.mas.masServer.repository.OTPRepository;
+import com.mas.masServer.repository.SecurityQuestionRepository;
+import com.mas.masServer.repository.SystemRoleRepository;
+import com.mas.masServer.repository.UserRepository;
+import com.mas.masServer.repository.UserSecurityAnswerRepository;
+
+import jakarta.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private SystemRoleRepository systemRoleRepository;
+
+    @Autowired
+    private OTPRepository otpRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private SecurityQuestionRepository securityQuestionRepository;
+
+    @Autowired
+    private UserSecurityAnswerRepository userSecurityAnswerRepository;
+
+    /**
+     * Pre-populate security questions on application startup if the table is empty.
+     */
+    @PostConstruct
+    public void initSystemRole() {
+        if (systemRoleRepository.count() == 0) {
+            List<String> roleName = Arrays.asList(
+                "ADMIN",
+                "USER"
+            );
+
+            for (String r : roleName) {
+                SystemRole role = new SystemRole();
+                role.setRoleName(r);
+                systemRoleRepository.save(role);
+            }
+        }
+    }
+
+    @Transactional
+    public UserRegisterResponse registerUser(UserRegisterRequest request, MultipartFile imgFile) {
+        // Check if email or contact number already exists
+        if (userRepository.existsByEmailId(request.getEmailId())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        System.out.println("Check:1");
+        if (userRepository.existsByContactNumber(request.getContactNumber())) {
+            throw new RuntimeException("Contact number already exists");
+        }
+        System.out.println("Check:2");
+
+        if (request.getSecurityAnswerRequest() == null || request.getSecurityAnswerRequest().size() != 3) {
+            throw new RuntimeException("Exactly 3 security questions must be provided");
+        }
+        System.out.println("Check:3");
+
+        // Determine role: ADMIN for first user, USER for others
+        SystemRole role = userRepository.count() == 0 ?
+                systemRoleRepository.findByRoleName("ADMIN") :
+                systemRoleRepository.findByRoleName("USER");
+
+        // Create user
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setMiddleName(request.getMiddleName());
+        user.setLastName(request.getLastName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setEmailId(request.getEmailId());
+        user.setContactNumber(request.getContactNumber());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(role);
+        user.setIsEmailVerified(false);
+        System.out.println("Check:4");
+
+        // Convert imgFile to Blob and set to user
+        if (imgFile != null && !imgFile.isEmpty()) {
+            try {
+                java.sql.Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imgFile.getBytes());
+                user.setImage(imageBlob);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to process image file", e);
+            }
+        } else {
+            user.setImage(null);
+        }
+        System.out.println("Check:5");
+
+        user = userRepository.save(user);
+        System.out.println("Check:6");
+
+        generateAndSendOTP(user.getEmailId());
+
+        // Save security answers
+        setSecurityAnswers(user.getUserId(), request.getSecurityAnswerRequest());
+
+        // Audit
+        auditLogService.log(user.getUserId(), "users", "register", null, user.getEmailId(), "User registered, pending OTP");
+        System.out.println("Check:7");
+
+        UserRegisterResponse response = new UserRegisterResponse();
+        response.setUserId(user.getUserId());
+        response.setEmailId(user.getEmailId());
+        response.setMessage("OTP sent to email. Verify to complete registration.");
+        System.out.println("Check:8");
+
+        return response;
+    }
+
+    public void verifyOTP(String emailId, String otpCode) {
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        OTP otp = otpRepository.findByUserAndOtpCodeAndIsUsedFalse(user, otpCode)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired OTP"));
+
+        if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        otp.setIsUsed(true);
+        otpRepository.save(otp);
+
+        user.setIsEmailVerified(true);
+        userRepository.save(user);
+    }
+
+    public void generateAndSendOTP(String emailId){
+        User user = userRepository.findByEmailId(emailId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Generate and send OTP
+        String otpCode = UUID.randomUUID().toString().substring(0, 6);
+        OTP otp = new OTP();
+        otp.setUser(user);
+        otp.setOtpCode(otpCode);
+        otp.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+        otp.setIsUsed(false);
+        otpRepository.save(otp);
+
+        emailService.sendOTP(user.getEmailId(), otpCode);
+    }
+
+    // In UserService...
+    public CustomUserProfileDTO getUserProfile(Long userId) {
+        // find user
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        // Map to DTO (exclude password)
+        CustomUserProfileDTO response = new CustomUserProfileDTO();
+        // ... populate fields ...
+        response.setSystemRole(user.getRole().getRoleName());
+        response.setContactNumber(user.getContactNumber());
+        // response.setDateOfBirth(user.getDateOfBirth());
+        // response.setMiddleName(user.getMiddleName());
+        response.setLastName(user.getLastName());
+        // response.setImage(user.getImage());
+        response.setFirstName(user.getFirstName());
+        response.setEmailId(user.getEmailId());
+        response.setUserId(user.getUserId());
+
+        return response;
+    }
+
+    @Transactional
+    public void updateUserProfile(Long userId, UserUpdateRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        // Update fields (add validation, e.g., unique contactNumber)
+        user.setFirstName(request.getFirstName());
+        // ... other fields ...
+        userRepository.save(user);
+        auditLogService.log(userId, "users", "firstName", null, request.getFirstName(), "Profile updated");
+    }
+
+    @Transactional
+    public void setSecurityAnswers(Long userId, List<SecurityAnswerRequest> answers) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (answers.size() != 3) {
+            throw new RuntimeException("Exactly 3 security answers required");
+        }
+
+        if (userSecurityAnswerRepository.existsByUserUserId(userId)) {
+            userSecurityAnswerRepository.deleteByUserUserId(userId); // delete any existing answers
+
+        }
+
+        // Check for duplicate question IDs in the request itself
+        Set<Long> uniqueQuestionIds = new HashSet<>();
+        for (SecurityAnswerRequest ans : answers) {
+            if (!uniqueQuestionIds.add(ans.getQuestionId())) {
+                throw new RuntimeException("Duplicate question selected in request: " + ans.getQuestionId());
+            }
+        }
+
+        // Prepare all UserSecurityAnswer entities first
+        List<UserSecurityAnswer> userAnswers = new ArrayList<>();
+        for (SecurityAnswerRequest ans : answers) {
+            SecurityQuestion question = securityQuestionRepository.findById(ans.getQuestionId())
+                    .orElseThrow(() -> new RuntimeException("Invalid question ID: " + ans.getQuestionId()));
+
+            UserSecurityAnswer userAnswer = new UserSecurityAnswer();
+            userAnswer.setUser(user);
+            userAnswer.setQuestion(question);
+            userAnswer.setAnswer(passwordEncoder.encode(ans.getAnswer())); // Hash answer
+            userAnswers.add(userAnswer);
+        }
+
+        // Save all answers in one call
+        userSecurityAnswerRepository.saveAll(userAnswers);
+
+        auditLogService.log(userId, "user_security_answer", "answers", null, "Set", "Security answers configured");
+    }
+
+}

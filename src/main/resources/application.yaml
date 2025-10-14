@@ -1,0 +1,47 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+
+jwt:
+  secret: "muCWlNPM9ze589S2yDzhxIgHRzwSkbBb/PuTiMtmEKvhzeCHcS/nMaWrfKbvAdmw/nLwX6Pa5XrPOpCKXPdujw=="
+  expiration: 86400000
+
+
+spring:
+    application:
+        name: masServer
+    datasource:
+        url: jdbc:postgresql://localhost:5432/mas_db
+        username: biomas_user
+        password: securepassword
+        driver-class-name: org.postgresql.Driver
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+    security:
+        user:
+            name: admin
+            password: password123
+
+    mail:
+        host: smtp.zoho.in
+        port: 587
+        username: kalashkumar@zohomail.in
+        password: irsYGj77e9Jq
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+      
+
+minio:
+    url: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name: mas-files
