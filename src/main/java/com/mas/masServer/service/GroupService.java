@@ -95,6 +95,8 @@ public class GroupService {
         response.setGroupId(group.getGroupId());
         response.setGroupName(group.getGroupName());
         response.setMessage("Group created successfully");
+        response.setGroupAuthType(group.getGroupAuthType());
+        response.setManagerName(group.getManager().getFirstName());
         return response;
     }
 
