@@ -26,8 +26,8 @@ public class MembershipController {
         return ResponseEntity.ok(message);
     }
 
-    @PostMapping
-    public ResponseEntity<String> addMember(@RequestParam Long groupId, @RequestBody AddMemberRequestDto request) {
+    @PostMapping("/{groupId}/addMember")
+    public ResponseEntity<String> addMember(@PathVariable Long groupId, @RequestBody List<AddMemberRequestDto> request) {
         return ResponseEntity.ok(membershipService.addMember(groupId, request));
     }
 

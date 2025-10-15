@@ -149,55 +149,58 @@ public class MembershipService {
 
     @Transactional
     @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
-    public String addMember(Long groupId, AddMemberRequestDto request) {
+    public String addMember(Long groupId, List<AddMemberRequestDto> requests) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Validate user is system role USER
-        if (!"USER".equals(user.getRole().getRoleName())) {
-            throw new RuntimeException("Only users with USER role can be added as members");
-        }
-
-        // Check if user is already a member
-        if (membershipRepository.existsByUserAndGroup(user, group)) {
-            throw new RuntimeException("User is already a member of this group");
-        }
-
-        // Default to MEMBER role if not specified or invalid
-        String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PANELIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PANELIST" : "MEMBER";
-        GroupRole groupRole = groupRoleRepository.findByRoleName(roleName)
-                .orElseThrow(() -> new RuntimeException("Group role " + roleName + " not found"));
-
-        // Validate role for group type
-        if (group.getGroupAuthType() == GroupAuthType.C && !"PANELIST".equals(roleName) && !"MEMBER".equals(roleName)) {
-            throw new RuntimeException("Group Type C only allows MEMBER or PANELIST roles");
-        }
-
-        // Create membership
-        Membership membership = new Membership();
-        membership.setUser(user);
-        membership.setGroup(group);
-        membership.setGroupRole(groupRole);
-        membership.setStatus(MembershipStatus.ACTIVE);
-        membershipRepository.save(membership);
-
-        // Update quorumK
-        updateQuorumKOnAdd(group, roleName);
-
-        // Notify user
-        String emailMessage = "You have been added to group '" + group.getGroupName() + "' as a " + roleName + ".";
-        emailService.sendNotification(user.getEmailId(), "Added to Group", emailMessage);
-
-        // Audit
         String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(gmEmail)
                 .orElseThrow(() -> new RuntimeException("GM not found"));
-        auditLogService.log(gmUser.getUserId(), "membership", "add", null, user.getUserId() + ":" + groupId, "Member added by GM");
 
-        return "Member added successfully";
+        for (AddMemberRequestDto request : requests) {
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Validate user is system role USER
+            if (!"USER".equals(user.getRole().getRoleName())) {
+                throw new RuntimeException("Only users with USER role can be added as members");
+            }
+
+            // Check if user is already a member
+            if (membershipRepository.existsByUserAndGroup(user, group)) {
+                throw new RuntimeException("User " + user.getUserId() + " is already a member of this group");
+            }
+
+            // Default to MEMBER role if not specified or invalid
+            String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PANELIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PANELIST" : "MEMBER";
+            GroupRole groupRole = groupRoleRepository.findByRoleName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Group role " + roleName + " not found"));
+
+            // Validate role for group type
+            if (group.getGroupAuthType() == GroupAuthType.C && !"PANELIST".equals(roleName) && !"MEMBER".equals(roleName)) {
+                throw new RuntimeException("Group Type C only allows MEMBER or PANELIST roles");
+            }
+
+            // Create membership
+            Membership membership = new Membership();
+            membership.setUser(user);
+            membership.setGroup(group);
+            membership.setGroupRole(groupRole);
+            membership.setStatus(MembershipStatus.ACTIVE);
+            membershipRepository.save(membership);
+
+            // Update quorumK
+            updateQuorumKOnAdd(group, roleName);
+
+            // Notify user
+            String emailMessage = "You have been added to group '" + group.getGroupName() + "' as a " + roleName + ".";
+            emailService.sendNotification(user.getEmailId(), "Added to Group", emailMessage);
+
+            // Audit
+            auditLogService.log(gmUser.getUserId(), "membership", "add", null, user.getUserId() + ":" + groupId, "Member added by GM");
+        }
+
+        return "Members added successfully";
     }
 
     private void updateQuorumKOnAdd(Group group, String roleName) {
