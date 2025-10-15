@@ -167,13 +167,13 @@ public class MembershipService {
         }
 
         // Default to MEMBER role if not specified or invalid
-        String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PENALIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PENALIST" : "MEMBER";
+        String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PANELIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PANELIST" : "MEMBER";
         GroupRole groupRole = groupRoleRepository.findByRoleName(roleName)
                 .orElseThrow(() -> new RuntimeException("Group role " + roleName + " not found"));
 
         // Validate role for group type
-        if (group.getGroupAuthType() == GroupAuthType.C && !"PENALIST".equals(roleName) && !"MEMBER".equals(roleName)) {
-            throw new RuntimeException("Group Type C only allows MEMBER or PENALIST roles");
+        if (group.getGroupAuthType() == GroupAuthType.C && !"PANELIST".equals(roleName) && !"MEMBER".equals(roleName)) {
+            throw new RuntimeException("Group Type C only allows MEMBER or PANELIST roles");
         }
 
         // Create membership
@@ -204,8 +204,8 @@ public class MembershipService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(group.getQuorumK() + 1); // Increase for each MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PANELIST in C
         } // D: Set by GM separately; A: No change
         groupRepository.save(group);
     }

@@ -12,5 +12,5 @@ public class GroupRole {
     private Long groupRoleId;
 
     @Column(nullable = false, unique = true)
-    private String roleName; // GROUP_MANAGER, MEMBER, PENALIST
+    private String roleName; // GROUP_MANAGER, MEMBER, PANELIST
 }

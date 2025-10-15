@@ -96,7 +96,7 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PENALIST')")
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
     public String sendRemoveRequest(Long groupId, GroupRemoveRequestDto request) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
@@ -284,8 +284,8 @@ public class GroupRequestService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(group.getQuorumK() + 1); // Increase for each MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PANELIST in C
         } // D: Set by GM separately; A: No change
         groupRepository.save(group);
     }
@@ -294,8 +294,8 @@ public class GroupRequestService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PANELIST in C
         } // D/A: No auto-change
         groupRepository.save(group);
     }

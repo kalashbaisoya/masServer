@@ -44,7 +44,7 @@ public class GroupService {
         if(groupRoleRepository.count()==0){
             List<String> grouproleName = Arrays.asList(
                 "GROUP_MANAGER",
-                "PENALIST",
+                "PANELIST",
                 "MEMBER"
             );
 

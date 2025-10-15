@@ -217,12 +217,12 @@ public class DocumentService {
                 return onlineMembers == totalMembers && gmOnline;
 
             case C:
-                // Require all PENALIST + GM online
-                long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PENALIST");
+                // Require all PANELIST + GM online
+                long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PANELIST");
                 onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
                 long onlinePanelists = onlineStates.stream()
-                        .filter(state -> "PENALIST".equals(state.getMembership().getGroupRole().getRoleName()))
+                        .filter(state -> "PANELIST".equals(state.getMembership().getGroupRole().getRoleName()))
                         .count();
 
                 // Check GM online
