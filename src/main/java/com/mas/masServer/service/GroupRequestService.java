@@ -77,25 +77,26 @@ public class GroupRequestService {
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        BecomeManagerRequest managerRequest = new BecomeManagerRequest();
-        managerRequest.setUser(user);
-        managerRequest.setGroupAuthType(request.getGroupAuthType());
-        managerRequest.setStatus(RequestStatus.PENDING);
-        managerRequest.setRequestDescription(request.getRequestDescription());
-        becomeManagerRequestRepository.save(managerRequest);
+        BecomeManagerRequest userRequest = new BecomeManagerRequest();
+        userRequest.setUser(user);
+        userRequest.setGroupAuthType(request.getGroupAuthType());
+        userRequest.setStatus(RequestStatus.PENDING);
+        userRequest.setRequestDescription(request.getRequestDescription());
+        userRequest.setGroupName(request.getGroupName());
+        becomeManagerRequestRepository.save(userRequest);
 
         // Notify admin (find admin user)
         User admin = userRepository.findByRoleRoleName("ADMIN")
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
         emailService.sendNotification(admin.getEmailId(), "New Become Manager Request", "User " + user.getEmailId() + " requested to become GM. Auth Type: " + request.getGroupAuthType() + ". Description: " + request.getRequestDescription());
 
-        auditLogService.log(user.getUserId(), "become_manager_request", "create", null, managerRequest.getRequestId().toString(), "Become manager request sent");
+        auditLogService.log(user.getUserId(), "become_manager_request", "create", null, userRequest.getRequestId().toString(), "Become manager request sent");
 
         return "Become manager request sent successfully";
     }
 
     @Transactional
-    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_#groupId_MEMBER','GROUP_ROLE_#groupId_PENALIST')")
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PENALIST')")
     public String sendRemoveRequest(Long groupId, GroupRemoveRequestDto request) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
@@ -124,7 +125,7 @@ public class GroupRequestService {
         return "Remove request sent successfully";
     }
 
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public List<GroupJoinRequestResponseDto> viewJoinRequests(Long groupId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
@@ -166,6 +167,7 @@ public class GroupRequestService {
             dto.setGroupAuthType(r.getGroupAuthType());
             dto.setStatus(r.getStatus());
             dto.setRequestDescription(r.getRequestDescription());
+            dto.setGroupName(r.getGroupName());
             return dto;
         }).collect(Collectors.toList());
     }

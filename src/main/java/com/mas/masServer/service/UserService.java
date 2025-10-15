@@ -2,6 +2,7 @@ package com.mas.masServer.service;
 
 import com.mas.masServer.dto.CustomUserProfileDTO;
 import com.mas.masServer.dto.SecurityAnswerRequest;
+import com.mas.masServer.dto.UserProfileResponse;
 // import com.mas.masServer.dto.UserProfileResponse;
 import com.mas.masServer.dto.UserRegisterRequest;
 import com.mas.masServer.dto.UserRegisterResponse;
@@ -20,6 +21,7 @@ import com.mas.masServer.repository.UserSecurityAnswerRepository;
 import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -199,8 +201,47 @@ public class UserService {
         response.setFirstName(user.getFirstName());
         response.setEmailId(user.getEmailId());
         response.setUserId(user.getUserId());
+        response.setIsEmailVerified(user.getIsEmailVerified());
 
         return response;
+    }
+
+    
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','ROLE_ADMIN')")
+    public List<UserProfileResponse> getAllVerifiedUserProfile() {
+        List<User> users = userRepository.findByIsEmailVerifiedTrue();
+        List<UserProfileResponse> responses = new ArrayList<>();
+        for (User user : users) {
+            UserProfileResponse resp = new UserProfileResponse();
+            resp.setUserId(user.getUserId());
+            resp.setFirstName(user.getFirstName());
+            resp.setLastName(user.getLastName());
+            resp.setEmailId(user.getEmailId());
+            resp.setContactNumber(user.getContactNumber());
+            resp.setDateOfBirth(user.getDateOfBirth());
+            resp.setSystemRole(user.getRole());
+            // Convert byte[] to Base64 String for easier frontend handling
+            // if (user.getImage() != null) {
+            //     try {
+            //         byte[] imageBytes = user.getImage();
+            //         if (imageBytes.length > 0) {
+            //             String base64Image = java.util.Base64.getEncoder().encodeToString(imageBytes);
+            //             resp.setImage(base64Image); // DTO should have image as String
+            //         } else {
+            //             resp.setImage(null);
+            //         }
+            //     } catch (Exception e) {
+            //         System.out.println("Error processing image bytes: " + e.getMessage());
+            //         resp.setImage(null);
+            //     }
+            // } else {
+            //     resp.setImage(null);
+            // }
+            resp.setMiddleName(user.getMiddleName());
+            // Add other fields as needed
+            responses.add(resp);
+        }
+        return responses;
     }
 
     @Transactional

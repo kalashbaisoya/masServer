@@ -12,4 +12,5 @@ public class BecomeManagerRequestResponseDto {
     private GroupAuthType groupAuthType;
     private RequestStatus status;
     private String requestDescription;
+    private String groupName;
 }

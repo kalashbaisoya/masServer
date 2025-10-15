@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired
@@ -34,8 +36,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
                 configurePublicEndpoints(auth);
-                // configureMemberEndpoints(auth);
-                // configureGroupManagerEndpoints(auth);
+                configureMemberEndpoints(auth);
                 configureAdminEndpoints(auth);
 
                 // Default: authenticated users can access other endpoints
@@ -81,25 +82,18 @@ public class SecurityConfig {
         ).permitAll();
     }
 
-    // private void configureMemberEndpoints(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-    //     auth.requestMatchers(
-    //         "/api/groups/**/remove-request"
-    //     ).hasAnyRole("MEMBER", "PENALIST", "GROUP_MANAGER", "ADMIN");
-    // }
-
-    // private void configureGroupManagerEndpoints(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-    //     auth.requestMatchers(
-    //         "/api/groups/**/join-requests/**",
-    //         "/api/groups/**/quorum-k"
-    //     ).hasAnyRole("GROUP_MANAGER", "ADMIN");
-    // }
+    private void configureMemberEndpoints(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
+        auth.requestMatchers(
+            "/api/group/viewAll"
+        ).hasAnyRole("USER", "ADMIN");
+    }
 
     private void configureAdminEndpoints(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth.requestMatchers(
-            "/api/groups", "/api/groups/{groupId}","/api/{groupId}/manager", 
+            "/api/group/*","/api/group/*/manager", 
             "/api/become-manager-requests", 
-            "/api/become-manager-requests/{requestId}/accept", 
-            "/api/become-manager-requests/{requestId}/reject"
+            "/api/become-manager-requests/*/accept", 
+            "/api/become-manager-requests/*/reject"
         ).hasRole("ADMIN");
     }
 

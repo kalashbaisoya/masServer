@@ -3,6 +3,7 @@ package com.mas.masServer.controller;
 
 import com.mas.masServer.dto.LoginRequest;
 import com.mas.masServer.dto.LoginResponse;
+import com.mas.masServer.dto.UserProfileResponse;
 // import com.mas.masServer.dto.UserProfileResponse;
 import com.mas.masServer.dto.UserRegisterRequest;
 import com.mas.masServer.dto.UserRegisterResponse;
@@ -83,14 +84,14 @@ public class UserController {
 
 
     /**
-     * Get user profile (authenticated)
+     * Get all user profile (admin and GM)
      */
-    // @GetMapping("/users/{userId}")
-    // public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
-    //     // Assumes authentication checks userId matches JWT principal
-    //     UserProfileResponse profile = userService.getUserProfile(userId);
-    //     return ResponseEntity.ok(profile);
-    // }
+    @GetMapping("/users")
+    public ResponseEntity<List<UserProfileResponse>> getAllVerifiedUserProfile() {
+        // Assumes authentication checks userId matches JWT principal
+        List<UserProfileResponse> profiles = userService.getAllVerifiedUserProfile();
+        return ResponseEntity.ok(profiles);
+    }
 
     /**
      * Update user profile (authenticated)

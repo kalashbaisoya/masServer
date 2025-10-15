@@ -26,5 +26,8 @@ public class BecomeManagerRequest {
 
     @Column(nullable = false)
     private String requestDescription;
+
+    @Column(nullable = false)
+    private String groupName;
 }
 

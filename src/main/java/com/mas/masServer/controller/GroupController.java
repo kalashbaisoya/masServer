@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/groups")
+@RequestMapping("/api/group")
 public class GroupController {
 
     @Autowired
     private GroupService groupService;
 
     //admin
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<CreateGroupResponse> createGroup(@RequestBody CreateGroupRequest request) {
         return ResponseEntity.ok(groupService.createGroup(request));
     }
@@ -27,8 +27,8 @@ public class GroupController {
         return ResponseEntity.ok(groupService.deleteGroupByGroupId(groupId));
     }
 
-    //admin
-    @GetMapping
+    //authenticated
+    @GetMapping("/viewAll")
     public ResponseEntity<List<GroupResponse>> viewAllGroups() {
         return ResponseEntity.ok(groupService.viewAllGroups());
     }
@@ -36,6 +36,7 @@ public class GroupController {
     //admin
     @PutMapping("/{groupId}/manager")
     public ResponseEntity<String> replaceManager(@PathVariable Long groupId, @RequestBody ReplaceManagerRequest request) {
+        System.out.println("Check point : init replaceGM");
         return ResponseEntity.ok(groupService.replaceGroupManager(groupId, request));
     }
 

@@ -3,8 +3,10 @@ package com.mas.masServer.dto;
 
 import lombok.Data;
 
-import java.sql.Blob;
+// import java.sql.Blob;
 import java.time.LocalDate;
+
+import com.mas.masServer.entity.SystemRole;
 
 @Data
 public class UserProfileResponse {
@@ -15,6 +17,6 @@ public class UserProfileResponse {
     private LocalDate dateOfBirth;
     private String emailId;
     private String contactNumber;
-    private Blob image;
-    private String roleName;  // ADMIN/USER
+    private String image;
+    private SystemRole systemRole;  // ADMIN/USER
 }

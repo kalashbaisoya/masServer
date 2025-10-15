@@ -1,5 +1,7 @@
 package com.mas.masServer.entity;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -11,7 +13,7 @@ public class Group {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long groupId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String groupName;
 
     @Enumerated(EnumType.STRING)
@@ -24,5 +26,8 @@ public class Group {
 
     @Column(nullable = false)
     private Integer quorumK = 0;
+
+    @Column(nullable = true)
+    private LocalDate dateTime;
 }
 

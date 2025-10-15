@@ -14,7 +14,7 @@ public class MembershipController {
     private MembershipService membershipService;
 
     @PostMapping("/{membershipId}/status")
-    public ResponseEntity<String> updateStatus(
+    public ResponseEntity<String> updateOnlineStatus(
             @PathVariable Long membershipId,
             @RequestBody MembershipStatusUpdateRequest request) {
         String message = membershipService.updateMembershipStatus(membershipId, request);

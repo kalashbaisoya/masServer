@@ -8,4 +8,5 @@ import lombok.Data;
 public class BecomeManagerRequestDto {
     private GroupAuthType groupAuthType;
     private String requestDescription;
+    private String groupName;
 }

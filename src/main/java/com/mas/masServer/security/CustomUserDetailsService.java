@@ -38,9 +38,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         List<Membership> memInfo = membershipRepository.findByUser(user);
         for (Membership membership : memInfo) {
             String groupRole = membership.getGroupRole().getRoleName();
-            Long groupId = membership.getGroup().getGroupId();
-            // Format: GROUP_ROLE_<groupId>_<roleName> (e.g., GROUP_ROLE_1_GROUP_MANAGER)
-            authorities.add(new SimpleGrantedAuthority("GROUP_ROLE_" + groupId + "_" + groupRole.toUpperCase()));
+            // Long groupId = membership.getGroup().getGroupId();
+            // Format: GROUP_ROLE_<groupId>_<roleName> (e.g., GROUP_ROLE_GROUP_MANAGER)
+            authorities.add(new SimpleGrantedAuthority("GROUP_ROLE_" + groupRole.toUpperCase()));
         }
 
         return org.springframework.security.core.userdetails.User.builder()

@@ -56,15 +56,41 @@ public class GroupService {
         }
     }
 
+    public List<GroupResponse> viewAllGroups() {
+        List<Group> groups = groupRepository.findAll();
+        return groups.stream().map(g -> {
+            GroupResponse resp = new GroupResponse();
+            resp.setGroupId(g.getGroupId());
+            resp.setGroupName(g.getGroupName());
+            resp.setGroupAuthType(g.getGroupAuthType());
+            if (g.getManager() != null) {
+                resp.setManagerName(
+                    g.getManager().getFirstName() +
+                    (g.getManager().getMiddleName() != null && !g.getManager().getMiddleName().isEmpty() ? " " + g.getManager().getMiddleName() : "") +
+                    " " + g.getManager().getLastName()
+                );
+                resp.setManagerId(g.getManager().getUserId());
+                resp.setCreatedOn(g.getDateTime());
+                System.out.println(g.getManager().getUserId());
+
+            } else {
+                resp.setManagerId(null);
+            }
+            resp.setQuorumK(g.getQuorumK());
+            return resp;
+        }).collect(Collectors.toList());
+    }
+
+
     @Transactional
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public CreateGroupResponse createGroup(CreateGroupRequest request) {
         // Validate manager exists and is USER role
         User manager = userRepository.findById(request.getManagerId())
                 .orElseThrow(() -> new RuntimeException("Manager user not found"));
-        if (!"USER".equals(manager.getRole().getRoleName())) {
-            throw new RuntimeException("Manager must be a USER role");
-        }
+        // if (!"USER".equals(manager.getRole().getRoleName())) {
+        //     throw new RuntimeException("Manager must be a USER role");
+        // }
 
         // Create group
         Group group = new Group();
@@ -72,6 +98,7 @@ public class GroupService {
         group.setGroupAuthType(request.getGroupAuthType());
         group.setManager(manager);
         group.setQuorumK(0); // Default
+        group.setDateTime(java.time.LocalDate.now());
         group = groupRepository.save(group);
 
         // Add manager to membership as GROUP_MANAGER
@@ -120,38 +147,28 @@ public class GroupService {
         return "Group deleted successfully";
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<GroupResponse> viewAllGroups() {
-        List<Group> groups = groupRepository.findAll();
-        return groups.stream().map(g -> {
-            GroupResponse resp = new GroupResponse();
-            resp.setGroupId(g.getGroupId());
-            resp.setGroupName(g.getGroupName());
-            resp.setGroupAuthType(g.getGroupAuthType());
-            resp.setManagerId(g.getManager().getUserId());
-            resp.setQuorumK(g.getQuorumK());
-            return resp;
-        }).collect(Collectors.toList());
-    }
 
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     public String replaceGroupManager(Long groupId, ReplaceManagerRequest request) {
+        System.out.println("Check point 0.0");
         // Security: Enforced at controller (ADMIN only)
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
-
+        System.out.println("Check point 0.1");
         User oldManager = group.getManager();
         User newManager = userRepository.findById(request.getNewManagerId())
                 .orElseThrow(() -> new RuntimeException("New manager user not found"));
+        System.out.println("Check point 0.2");
         if (!"USER".equals(newManager.getRole().getRoleName())) {
-            throw new RuntimeException("New manager must be a USER role");
+            // throw new RuntimeException("New manager must be a USER role");
+            System.out.println("Check point 1");
         }
 
         // Update group
         group.setManager(newManager);
         groupRepository.save(group);
-
+        System.out.println("Check point 2");
         // Update memberships roles
         GroupRole gmRole = groupRoleRepository.findByRoleName("GROUP_MANAGER")
                 .orElseThrow(() -> new RuntimeException("Group role not found"));
@@ -161,14 +178,15 @@ public class GroupService {
         // Demote old GM to MEMBER (assume existing membership; update role)
         Membership oldGmMembership = membershipRepository.findByUserAndGroup(oldManager, group);
         if (oldGmMembership == null || !MembershipStatus.ACTIVE.equals(oldGmMembership.getStatus())) {
-            auditLogService.log(oldManager.getUserId(), "document", "access_attempt", null, "Denied: Not active member", "Access denied");
+            // auditLogService.log(oldManager.getUserId(), "document", "access_attempt", null, "Denied: Not active member", "Access denied");
             throw new RuntimeException("User is not an active member of this group");
         }
+        System.out.println("Check point 3");
         if (oldGmMembership != null) {
             oldGmMembership.setGroupRole(memberRole);
             membershipRepository.save(oldGmMembership);
         } // If no membership (edge case), optionally create as MEMBER
-
+        System.out.println("Check point 4");
         // Promote new GM: Check if membership exists
         Membership newGmMembership = membershipRepository.findByUserAndGroup(newManager, group);
         if (newGmMembership == null) {
@@ -180,14 +198,14 @@ public class GroupService {
         }
         newGmMembership.setGroupRole(gmRole);
         membershipRepository.save(newGmMembership);
-
+        System.out.println("Check point 5");
         // Notifications
         emailService.sendNotification(oldManager.getEmailId(), "Group Manager Role Removed", "You are no longer the manager of group '" + group.getGroupName() + "'.");
         emailService.sendNotification(newManager.getEmailId(), "New Group Manager Role", "You are now the manager of group '" + group.getGroupName() + "'.");
 
         // Audit
         auditLogService.log(oldManager.getUserId(), "group", "manager_replace", oldManager.getUserId().toString(), newManager.getUserId().toString(), "GM replaced by admin");
-
+        System.out.println("Check point 6");
         return "Group manager replaced successfully";
     }
 
