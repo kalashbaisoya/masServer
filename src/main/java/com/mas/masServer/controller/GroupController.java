@@ -45,4 +45,10 @@ public class GroupController {
     public ResponseEntity<String> setQuorumK(@PathVariable Long groupId, @RequestBody SetQuorumKRequest request) {
         return ResponseEntity.ok(groupService.setQuorumKforGroupD(groupId, request));
     }
+
+    //GM
+    @PostMapping("/{groupId}/addMember")
+    public ResponseEntity<String> addMember(@PathVariable Long groupId, @RequestBody List<AddMemberRequestDto> request) {
+        return ResponseEntity.ok(groupService.addMember(groupId, request));
+    }
 }

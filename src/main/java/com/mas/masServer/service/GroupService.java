@@ -210,7 +210,7 @@ public class GroupService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public String setQuorumKforGroupD(Long groupId, SetQuorumKRequest request) {
         // Get authenticated user (GM)
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -243,5 +243,67 @@ public class GroupService {
         auditLogService.log(currentUser.getUserId(), "group", "quorumK", null, request.getQuorumK().toString(), "QuorumK set by GM");
 
         return "QuorumK set successfully for Group D";
+    }
+
+
+    @Transactional
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public String addMember(Long groupId, List<AddMemberRequestDto> requestList) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(gmEmail)
+                .orElseThrow(() -> new RuntimeException("GM not found"));
+
+        for (AddMemberRequestDto request : requestList) {
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Check if user is already a member
+            if (membershipRepository.existsByUserAndGroup(user, group)) {
+                throw new RuntimeException("User with ID " + user.getUserId() + " is already a member of this group");
+            }
+
+            // Default to MEMBER role if not specified or invalid
+            String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PENALIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PENALIST" : "MEMBER";
+            GroupRole groupRole = groupRoleRepository.findByRoleName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Group role " + roleName + " not found"));
+
+            // Validate role for group type
+            if (group.getGroupAuthType() == GroupAuthType.C && !"PENALIST".equals(roleName) && !"MEMBER".equals(roleName)) {
+                throw new RuntimeException("Group Type C only allows MEMBER or PENALIST roles");
+            }
+
+            // Create membership
+            Membership membership = new Membership();
+            membership.setUser(user);
+            membership.setGroup(group);
+            membership.setGroupRole(groupRole);
+            membership.setStatus(MembershipStatus.ACTIVE);
+            membershipRepository.save(membership);
+
+            // Update quorumK
+            updateQuorumKOnAdd(group, roleName);
+
+            // Notify user
+            String emailMessage = "You have been added to group '" + group.getGroupName() + "' as a " + roleName + ".";
+            emailService.sendNotification(user.getEmailId(), "Added to Group", emailMessage);
+
+            // Audit
+            auditLogService.log(gmUser.getUserId(), "membership", "add", null, user.getUserId() + ":" + groupId, "Member added by GM");
+        }
+
+        return "Members added successfully";
+    }
+
+    private void updateQuorumKOnAdd(Group group, String roleName) {
+        GroupAuthType type = group.getGroupAuthType();
+        if (type == GroupAuthType.B) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for each MEMBER in B
+        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } // D: Set by GM separately; A: No change
+        groupRepository.save(group);
     }
 }
