@@ -1,17 +1,24 @@
 package com.mas.masServer.service;
 
 
+import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.CustomMembershipDTO;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
+import com.mas.masServer.entity.Group;
 import com.mas.masServer.entity.GroupAuthState;
+import com.mas.masServer.entity.GroupAuthType;
+import com.mas.masServer.entity.GroupRole;
 import com.mas.masServer.entity.IsOnline;
 import com.mas.masServer.entity.Membership;
 import com.mas.masServer.entity.MembershipStatus;
 import com.mas.masServer.entity.User;
 import com.mas.masServer.repository.GroupAuthStateRepository;
+import com.mas.masServer.repository.GroupRepository;
+import com.mas.masServer.repository.GroupRoleRepository;
 import com.mas.masServer.repository.MembershipRepository;
 import com.mas.masServer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +41,15 @@ public class MembershipService {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private GroupRoleRepository groupRoleRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Transactional
     public String updateMembershipStatus(Long membershipId, MembershipStatusUpdateRequest request) {
@@ -102,5 +118,68 @@ public class MembershipService {
         })
         .collect(Collectors.toList());
         return memInfo;
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    public String addMember(Long groupId, AddMemberRequestDto request) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Validate user is system role USER
+        if (!"USER".equals(user.getRole().getRoleName())) {
+            throw new RuntimeException("Only users with USER role can be added as members");
+        }
+
+        // Check if user is already a member
+        if (membershipRepository.existsByUserAndGroup(user, group)) {
+            throw new RuntimeException("User is already a member of this group");
+        }
+
+        // Default to MEMBER role if not specified or invalid
+        String roleName = request.getGroupRoleName() != null && group.getGroupAuthType() == GroupAuthType.C && "PENALIST".equalsIgnoreCase(request.getGroupRoleName()) ? "PENALIST" : "MEMBER";
+        GroupRole groupRole = groupRoleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException("Group role " + roleName + " not found"));
+
+        // Validate role for group type
+        if (group.getGroupAuthType() == GroupAuthType.C && !"PENALIST".equals(roleName) && !"MEMBER".equals(roleName)) {
+            throw new RuntimeException("Group Type C only allows MEMBER or PENALIST roles");
+        }
+
+        // Create membership
+        Membership membership = new Membership();
+        membership.setUser(user);
+        membership.setGroup(group);
+        membership.setGroupRole(groupRole);
+        membership.setStatus(MembershipStatus.ACTIVE);
+        membershipRepository.save(membership);
+
+        // Update quorumK
+        updateQuorumKOnAdd(group, roleName);
+
+        // Notify user
+        String emailMessage = "You have been added to group '" + group.getGroupName() + "' as a " + roleName + ".";
+        emailService.sendNotification(user.getEmailId(), "Added to Group", emailMessage);
+
+        // Audit
+        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(gmEmail)
+                .orElseThrow(() -> new RuntimeException("GM not found"));
+        auditLogService.log(gmUser.getUserId(), "membership", "add", null, user.getUserId() + ":" + groupId, "Member added by GM");
+
+        return "Member added successfully";
+    }
+
+    private void updateQuorumKOnAdd(Group group, String roleName) {
+        GroupAuthType type = group.getGroupAuthType();
+        if (type == GroupAuthType.B) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for each MEMBER in B
+        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } // D: Set by GM separately; A: No change
+        groupRepository.save(group);
     }
 }

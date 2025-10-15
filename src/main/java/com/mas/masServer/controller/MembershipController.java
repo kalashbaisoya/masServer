@@ -1,5 +1,6 @@
 package com.mas.masServer.controller;
 
+import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
 import com.mas.masServer.service.MembershipService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,5 +20,10 @@ public class MembershipController {
             @RequestBody MembershipStatusUpdateRequest request) {
         String message = membershipService.updateMembershipStatus(membershipId, request);
         return ResponseEntity.ok(message);
+    }
+
+    @PostMapping
+    public ResponseEntity<String> addMember(@RequestParam Long groupId, @RequestBody AddMemberRequestDto request) {
+        return ResponseEntity.ok(membershipService.addMember(groupId, request));
     }
 }
