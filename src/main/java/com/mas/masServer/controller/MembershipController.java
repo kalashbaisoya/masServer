@@ -35,4 +35,9 @@ public class MembershipController {
     public ResponseEntity<List<MembershipResponseDto>> viewMembershipsByGroupId(@PathVariable Long groupId) {
         return ResponseEntity.ok(membershipService.viewMembershipsByGroupId(groupId));
     }
+
+    @GetMapping("/my-memberships")
+    public ResponseEntity<List<MembershipResponseDto>> viewMyMemberships() {
+        return ResponseEntity.ok(membershipService.viewMyMemberships());
+    }
 }

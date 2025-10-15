@@ -212,4 +212,36 @@ public class MembershipService {
         } // D: Set by GM separately; A: No change
         groupRepository.save(group);
     }
+
+    public List<MembershipResponseDto> viewMyMemberships() {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Membership> memberships = membershipRepository.findByUser(user);
+        List<MembershipResponseDto> response = memberships.stream().map(m -> {
+            MembershipResponseDto dto = new MembershipResponseDto();
+            dto.setMembershipId(m.getMembershipId());
+            dto.setUserId(m.getUser().getUserId());
+            dto.setEmailId(m.getUser().getEmailId());
+            dto.setGroupRoleName(m.getGroupRole().getRoleName());
+            dto.setStatus(m.getStatus());
+            dto.setGroupId(m.getGroup().getGroupId());
+            dto.setGroupName(m.getGroup().getGroupName());
+            dto.setGroupAuthType(m.getGroup().getGroupAuthType());
+            dto.setCreatedOn(m.getGroup().getDateTime());
+            User manager = m.getGroup().getManager();
+            String fullName = String.join(" ",
+                manager.getFirstName() != null ? manager.getFirstName() : "",
+                manager.getMiddleName() != null ? manager.getMiddleName() : "",
+                manager.getLastName() != null ? manager.getLastName() : ""
+            ).trim();
+            dto.setManagerName(fullName);
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(user.getUserId(), "memberships", "view_my_memberships", null, null, "Viewed own memberships");
+
+        return response;
+    }
 }
