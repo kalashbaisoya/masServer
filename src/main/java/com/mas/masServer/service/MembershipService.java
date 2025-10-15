@@ -3,6 +3,7 @@ package com.mas.masServer.service;
 
 import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.CustomMembershipDTO;
+import com.mas.masServer.dto.MembershipResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
 import com.mas.masServer.entity.Group;
 import com.mas.masServer.entity.GroupAuthState;
@@ -120,8 +121,34 @@ public class MembershipService {
         return memInfo;
     }
 
+
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER', 'ROLE_ADMIN')")
+    public List<MembershipResponseDto> viewMembershipsByGroupId(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Membership> memberships = membershipRepository.findByGroup(group);
+        List<MembershipResponseDto> response = memberships.stream().map(m -> {
+            MembershipResponseDto dto = new MembershipResponseDto();
+            dto.setMembershipId(m.getMembershipId());
+            dto.setUserId(m.getUser().getUserId());
+            dto.setEmailId(m.getUser().getEmailId());
+            dto.setGroupRoleName(m.getGroupRole().getRoleName());
+            dto.setStatus(m.getStatus());
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(currentUser.getUserId(), "membership", "view", null, groupId.toString(), "Viewed memberships for group");
+
+        return response;
+    }
+
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public String addMember(Long groupId, AddMemberRequestDto request) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));

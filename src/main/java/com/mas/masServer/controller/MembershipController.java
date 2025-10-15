@@ -1,8 +1,12 @@
 package com.mas.masServer.controller;
 
 import com.mas.masServer.dto.AddMemberRequestDto;
+import com.mas.masServer.dto.MembershipResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
 import com.mas.masServer.service.MembershipService;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,5 +29,10 @@ public class MembershipController {
     @PostMapping
     public ResponseEntity<String> addMember(@RequestParam Long groupId, @RequestBody AddMemberRequestDto request) {
         return ResponseEntity.ok(membershipService.addMember(groupId, request));
+    }
+
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<MembershipResponseDto>> viewMembershipsByGroupId(@PathVariable Long groupId) {
+        return ResponseEntity.ok(membershipService.viewMembershipsByGroupId(groupId));
     }
 }

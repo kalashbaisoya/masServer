@@ -22,5 +22,7 @@ public interface MembershipRepository extends JpaRepository<Membership,Long> {
     void deleteByGroup(Group group);
 
     boolean existsByUserAndGroup(User user, Group group);
+
+    List<Membership> findByGroup(Group group);
     
 }
