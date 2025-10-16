@@ -135,10 +135,27 @@ public class MembershipService {
         List<MembershipResponseDto> response = memberships.stream().map(m -> {
             MembershipResponseDto dto = new MembershipResponseDto();
             dto.setMembershipId(m.getMembershipId());
-            dto.setUserId(m.getUser().getUserId());
+            // dto.setUserId(m.getUser().getUserId());
+            String memberFullName = String.join(" ",
+                m.getUser().getFirstName() != null ? m.getUser().getFirstName() : "",
+                m.getUser().getMiddleName() != null ? m.getUser().getMiddleName() : "",
+                m.getUser().getLastName() != null ? m.getUser().getLastName() : ""
+            ).trim();
+            dto.setMemberName(memberFullName);
             dto.setEmailId(m.getUser().getEmailId());
             dto.setGroupRoleName(m.getGroupRole().getRoleName());
             dto.setStatus(m.getStatus());
+            dto.setGroupId(m.getGroup().getGroupId());
+            dto.setGroupName(m.getGroup().getGroupName());
+            dto.setGroupAuthType(m.getGroup().getGroupAuthType());
+            dto.setCreatedOn(m.getGroup().getDateTime());
+            User manager = m.getGroup().getManager();
+            String managerFullName = String.join(" ",
+                manager.getFirstName() != null ? manager.getFirstName() : "",
+                manager.getMiddleName() != null ? manager.getMiddleName() : "",
+                manager.getLastName() != null ? manager.getLastName() : ""
+            ).trim();
+            dto.setManagerName(managerFullName);
             return dto;
         }).collect(Collectors.toList());
 
@@ -226,7 +243,13 @@ public class MembershipService {
         List<MembershipResponseDto> response = memberships.stream().map(m -> {
             MembershipResponseDto dto = new MembershipResponseDto();
             dto.setMembershipId(m.getMembershipId());
-            dto.setUserId(m.getUser().getUserId());
+            // dto.setUserId(m.getUser().getUserId());
+            String memberFullName = String.join(" ",
+                m.getUser().getFirstName() != null ? m.getUser().getFirstName() : "",
+                m.getUser().getMiddleName() != null ? m.getUser().getMiddleName() : "",
+                m.getUser().getLastName() != null ? m.getUser().getLastName() : ""
+            ).trim();
+            dto.setMemberName(memberFullName);
             dto.setEmailId(m.getUser().getEmailId());
             dto.setGroupRoleName(m.getGroupRole().getRoleName());
             dto.setStatus(m.getStatus());

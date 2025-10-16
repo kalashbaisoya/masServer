@@ -9,7 +9,8 @@ import lombok.Data;
 @Data
 public class MembershipResponseDto {
     private Long membershipId;
-    private Long userId;
+    // private Long userId;
+    private String memberName;
     private String emailId;
     private String groupRoleName;
     private MembershipStatus status;
