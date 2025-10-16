@@ -40,4 +40,14 @@ public class MembershipController {
     public ResponseEntity<List<MembershipResponseDto>> viewMyMemberships() {
         return ResponseEntity.ok(membershipService.viewMyMemberships());
     }
+
+    @PutMapping("/{membershipId}/suspend")
+    public ResponseEntity<String> suspendMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
+        return ResponseEntity.ok(membershipService.suspendMember(membershipId, groupId));
+    }
+
+    @PutMapping("/{membershipId}/unsuspend")
+    public ResponseEntity<String> unsuspendMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
+        return ResponseEntity.ok(membershipService.unsuspendMember(membershipId, groupId));
+    }
 }

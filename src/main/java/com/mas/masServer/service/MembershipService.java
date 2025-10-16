@@ -244,4 +244,112 @@ public class MembershipService {
 
         return response;
     }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public String suspendMember(Long membershipId, Long groupId) {
+        Membership membership = membershipRepository.findById(membershipId)
+                .orElseThrow(() -> new RuntimeException("Membership not found"));
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Validate membership belongs to group
+        if (!membership.getGroup().getGroupId().equals(groupId)) {
+            throw new RuntimeException("Membership does not belong to this group");
+        }
+
+        // Prevent suspending GM
+        if ("GROUP_MANAGER".equals(membership.getGroupRole().getRoleName())) {
+            throw new RuntimeException("Cannot suspend the Group Manager");
+        }
+
+        // Check current status
+        if (membership.getStatus() == MembershipStatus.SUSPENDED) {
+            throw new RuntimeException("Member is already suspended");
+        }
+
+        membership.setStatus(MembershipStatus.SUSPENDED);
+        membershipRepository.save(membership);
+
+        // Update quorumK
+        updateQuorumKOnSuspend(group, membership.getGroupRole().getRoleName());
+
+        // Notify user
+        emailService.sendNotification(membership.getUser().getEmailId(), "Membership Suspended", 
+                "Your membership in group '" + group.getGroupName() + "' has been suspended.");
+
+        // Audit
+        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(gmEmail)
+                .orElseThrow(() -> new RuntimeException("GM not found"));
+        auditLogService.log(gmUser.getUserId(), "membership", "suspend", null, 
+                membershipId + ":" + groupId, "Member suspended by GM");
+
+        return "Member suspended successfully";
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public String unsuspendMember(Long membershipId, Long groupId) {
+        Membership membership = membershipRepository.findById(membershipId)
+                .orElseThrow(() -> new RuntimeException("Membership not found"));
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Validate membership belongs to group
+        if (!membership.getGroup().getGroupId().equals(groupId)) {
+            throw new RuntimeException("Membership does not belong to this group");
+        }
+
+        // Prevent unsuspending GM (though GM should never be suspended)
+        if ("GROUP_MANAGER".equals(membership.getGroupRole().getRoleName())) {
+            throw new RuntimeException("Cannot unsuspend the Group Manager");
+        }
+
+        // Check current status
+        if (membership.getStatus() == MembershipStatus.ACTIVE) {
+            throw new RuntimeException("Member is already active");
+        }
+
+        membership.setStatus(MembershipStatus.ACTIVE);
+        membershipRepository.save(membership);
+
+        // Update quorumK
+        updateQuorumKOnUnsuspend(group, membership.getGroupRole().getRoleName());
+
+        // Notify user
+        emailService.sendNotification(membership.getUser().getEmailId(), "Membership Restored", 
+                "Your membership in group '" + group.getGroupName() + "' has been restored to active.");
+
+        // Audit
+        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(gmEmail)
+                .orElseThrow(() -> new RuntimeException("GM not found"));
+        auditLogService.log(gmUser.getUserId(), "membership", "unsuspend", null, 
+                membershipId + ":" + groupId, "Member unsuspended by GM");
+
+        return "Member unsuspended successfully";
+    }
+
+    private void updateQuorumKOnSuspend(Group group, String roleName) {
+        GroupAuthType type = group.getGroupAuthType();
+        if (type == GroupAuthType.B) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
+        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
+        } // D/A: No change
+        groupRepository.save(group);
+    }
+
+    private void updateQuorumKOnUnsuspend(Group group, String roleName) {
+        GroupAuthType type = group.getGroupAuthType();
+        if (type == GroupAuthType.B) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for MEMBER in B
+        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } // D: Set by GM separately; A: No change
+        groupRepository.save(group);
+    }
 }
