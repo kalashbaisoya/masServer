@@ -39,7 +39,7 @@ public class UserController {
         @RequestPart("image") MultipartFile image,
         @RequestPart("request") UserRegisterRequest request ){
         UserRegisterResponse response = userService.registerUser(request, image);
-        userService.setSecurityAnswers(response.getUserId(),request.getSecurityAnswerRequest());
+        // userService.setSecurityAnswers(response.getUserId(),request.getSecurityAnswerRequest());
         return ResponseEntity.ok(response);
     }
 

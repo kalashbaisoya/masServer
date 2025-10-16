@@ -19,4 +19,5 @@ public class UserProfileResponse {
     private String contactNumber;
     private String image;
     private SystemRole systemRole;  // ADMIN/USER
+    private Boolean isEmailVerified;
 }

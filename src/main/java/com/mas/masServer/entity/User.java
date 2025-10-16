@@ -34,8 +34,11 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    
-    private Blob image;
+    @Column
+    private String imageName;
+
+    @Column
+    private String imageType;
 
     @Column(nullable = false)
     private Boolean isEmailVerified;

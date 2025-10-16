@@ -1,6 +1,5 @@
 package com.mas.masServer.service;
 
-import com.mas.masServer.dto.CustomUserProfileDTO;
 import com.mas.masServer.dto.SecurityAnswerRequest;
 import com.mas.masServer.dto.UserProfileResponse;
 // import com.mas.masServer.dto.UserProfileResponse;
@@ -18,9 +17,14 @@ import com.mas.masServer.repository.SystemRoleRepository;
 import com.mas.masServer.repository.UserRepository;
 import com.mas.masServer.repository.UserSecurityAnswerRepository;
 
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserService {
@@ -62,6 +67,15 @@ public class UserService {
     @Autowired
     private UserSecurityAnswerRepository userSecurityAnswerRepository;
 
+    @Autowired
+    private MinioClient minioClient;
+
+    @Value("${minio.bucket-name}")
+    private String bucketName;
+
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final String[] ALLOWED_FILE_TYPES = {"application/pdf", "image/png", "image/jpeg"};
+
     /**
      * Pre-populate security questions on application startup if the table is empty.
      */
@@ -82,7 +96,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserRegisterResponse registerUser(UserRegisterRequest request, MultipartFile imgFile) {
+    public UserRegisterResponse registerUser(UserRegisterRequest request, MultipartFile file) {
         // Check if email or contact number already exists
         if (userRepository.existsByEmailId(request.getEmailId())) {
             throw new RuntimeException("Email already exists");
@@ -117,17 +131,52 @@ public class UserService {
         user.setIsEmailVerified(false);
         System.out.println("Check:4");
 
-        // Convert imgFile to Blob and set to user
-        if (imgFile != null && !imgFile.isEmpty()) {
-            try {
-                java.sql.Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imgFile.getBytes());
-                user.setImage(imageBlob);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to process image file", e);
-            }
-        } else {
-            user.setImage(null);
+        // // Convert imgFile to Blob and set to user
+        // if (imgFile != null && !imgFile.isEmpty()) {
+        //     try {
+        //         java.sql.Blob imageBlob = new javax.sql.rowset.serial.SerialBlob(imgFile.getBytes());
+        //         user.setImage(imageBlob);
+        //     } catch (Exception e) {
+        //         throw new RuntimeException("Failed to process image file", e);
+        //     }
+        // } else {
+        //     user.setImage(null);
+        // }
+
+        // Validate file
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File is empty");
         }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new RuntimeException("File size exceeds 10MB");
+        }
+        if (!Arrays.asList(ALLOWED_FILE_TYPES).contains(file.getContentType())) {
+            throw new RuntimeException("Invalid file type. Allowed types: PDF, PNG, JPEG");
+        }
+
+        // Generate unique file ID
+        String originalFileName = file.getOriginalFilename();
+        String fileExtension = originalFileName != null ? originalFileName.substring(originalFileName.lastIndexOf(".")) : "";
+        String fileId = UUID.randomUUID() + fileExtension;
+
+        // Upload to MinIO
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileId)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload file to MinIO", e);
+        }
+
+        user.setImageName(fileId);
+        user.setImageType(file.getContentType());
+
+
         System.out.println("Check:5");
 
         user = userRepository.save(user);
@@ -186,13 +235,30 @@ public class UserService {
     }
 
     // In UserService...
-    public CustomUserProfileDTO getUserProfile(Long userId) {
+    public UserProfileResponse getUserProfile(Long userId) {
         // find user
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        
+                // Generate presigned URL (expires in 10 minutes)
+        String fileId = user.getImageName();
+        String presignedUrl;
+        try {
+            presignedUrl = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(fileId)
+                            .expiry(10, TimeUnit.MINUTES)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate presigned URL", e);
+        }
+        
         // Map to DTO (exclude password)
-        CustomUserProfileDTO response = new CustomUserProfileDTO();
+        UserProfileResponse response = new UserProfileResponse();
         // ... populate fields ...
-        response.setSystemRole(user.getRole().getRoleName());
+        response.setSystemRole(user.getRole());
         response.setContactNumber(user.getContactNumber());
         // response.setDateOfBirth(user.getDateOfBirth());
         // response.setMiddleName(user.getMiddleName());
@@ -202,6 +268,7 @@ public class UserService {
         response.setEmailId(user.getEmailId());
         response.setUserId(user.getUserId());
         response.setIsEmailVerified(user.getIsEmailVerified());
+        response.setImage(presignedUrl);
 
         return response;
     }

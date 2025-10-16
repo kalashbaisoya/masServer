@@ -8,7 +8,7 @@ import lombok.Data;
 public class LoginResponse {
     private String token;  // JWT
     private String message;
-    private CustomUserProfileDTO user;
+    private UserProfileResponse user;
     private List<CustomMembershipDTO> membershipInfo;
 
 }

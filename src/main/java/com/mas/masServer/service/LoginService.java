@@ -2,9 +2,9 @@ package com.mas.masServer.service;
 
 
 import com.mas.masServer.dto.CustomMembershipDTO;
-import com.mas.masServer.dto.CustomUserProfileDTO;
 import com.mas.masServer.dto.LoginRequest;
 import com.mas.masServer.dto.LoginResponse;
+import com.mas.masServer.dto.UserProfileResponse;
 import com.mas.masServer.entity.User;
 import com.mas.masServer.entity.UserSecurityAnswer;
 import com.mas.masServer.repository.UserRepository;
@@ -73,7 +73,7 @@ public class LoginService {
         // Generate JWT token
         String jwtToken = generateJwtToken(user);
 
-        CustomUserProfileDTO userProfile=userService.getUserProfile(user.getUserId());
+        UserProfileResponse userProfile=userService.getUserProfile(user.getUserId());
         List<CustomMembershipDTO> memInfo = membershipService.getMembershipDetailsByUserId(user.getUserId());
  
         LoginResponse response = new LoginResponse();
