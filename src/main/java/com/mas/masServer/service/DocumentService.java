@@ -145,7 +145,7 @@ public class DocumentService {
     }
 
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DocumentDownloadResponse downloadDocument(Long documentId) {
         // Get authenticated user
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
