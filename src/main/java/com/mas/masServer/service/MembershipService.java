@@ -157,14 +157,18 @@ public class MembershipService {
         User gmUser = userRepository.findByEmailId(gmEmail)
                 .orElseThrow(() -> new RuntimeException("GM not found"));
 
+        if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
+            throw new RuntimeException("Unauthorized: Only GM can add member to group");
+        }
+
         for (AddMemberRequestDto request : requests) {
             User user = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Validate user is system role USER
-            if (!"USER".equals(user.getRole().getRoleName())) {
-                throw new RuntimeException("Only users with USER role can be added as members");
-            }
+            // if (!"USER".equals(user.getRole().getRoleName())) {
+            //     throw new RuntimeException("Only users with USER role can be added as members");
+            // }
 
             // Check if user is already a member
             if (membershipRepository.existsByUserAndGroup(user, group)) {
@@ -350,6 +354,78 @@ public class MembershipService {
         } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
             group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
         } // D: Set by GM separately; A: No change
+        groupRepository.save(group);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public String removeMember(Long membershipId, Long groupId) {
+        Membership membership = membershipRepository.findById(membershipId)
+                .orElseThrow(() -> new RuntimeException("Membership not found"));
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Validate membership belongs to group
+        if (!membership.getGroup().getGroupId().equals(groupId)) {
+            throw new RuntimeException("Membership does not belong to this group");
+        }
+
+        // Prevent removing GM
+        if ("GROUP_MANAGER".equals(membership.getGroupRole().getRoleName())) {
+            throw new RuntimeException("Cannot remove the Group Manager");
+        }
+
+        User originalUser = membership.getUser();
+        if (!"USER".equals(originalUser.getRole().getRoleName())) {
+            throw new RuntimeException("Only users with USER role can be removed");
+        }
+
+        // Create dummy user
+        User dummyUser = new User();
+        dummyUser.setEmailId(membershipId + "+" + originalUser.getEmailId());
+        dummyUser.setContactNumber(membershipId + "+" + originalUser.getContactNumber());
+        dummyUser.setFirstName(originalUser.getFirstName());
+        dummyUser.setLastName(originalUser.getLastName());
+        dummyUser.setRole(originalUser.getRole());
+        dummyUser.setIsEmailVerified(false);
+        dummyUser.setDateOfBirth(originalUser.getDateOfBirth());
+        dummyUser.setPassword("null");
+        // Copy other fields if necessary (e.g., password, security questions)
+        userRepository.save(dummyUser);
+
+        // Reassign membership to dummy user
+        membership.setUser(dummyUser);
+        membershipRepository.save(membership);
+
+        // Update quorumK
+        updateQuorumKOnRemove(group, membership.getGroupRole().getRoleName());
+
+        // Delete any pending GroupRemoveRequest
+        // groupRemoveRequestRepository.findByMembership(membership)
+        //         .ifPresent(groupRemoveRequestRepository::delete);
+
+        // Notify original user
+        emailService.sendNotification(originalUser.getEmailId(), "Removed from Group",
+                "You have been removed from group '" + group.getGroupName() + "'.");
+
+        // Audit
+        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(gmEmail)
+                .orElseThrow(() -> new RuntimeException("GM not found"));
+        auditLogService.log(gmUser.getUserId(), "membership", "remove", null,
+                membershipId + ":" + groupId, "Member removed by GM, reassigned to dummy user");
+
+        return "Member removed successfully";
+    }
+
+    private void updateQuorumKOnRemove(Group group, String roleName) {
+        GroupAuthType type = group.getGroupAuthType();
+        if (type == GroupAuthType.B) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
+        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
+        } // D/A: No change
         groupRepository.save(group);
     }
 }

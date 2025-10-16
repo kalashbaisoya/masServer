@@ -50,4 +50,9 @@ public class MembershipController {
     public ResponseEntity<String> unsuspendMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
         return ResponseEntity.ok(membershipService.unsuspendMember(membershipId, groupId));
     }
+
+    @DeleteMapping("/{membershipId}/remove")
+    public ResponseEntity<String> removeMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
+        return ResponseEntity.ok(membershipService.removeMember(membershipId, groupId));
+    }
 }

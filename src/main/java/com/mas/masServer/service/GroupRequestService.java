@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,9 @@ public class GroupRequestService {
 
     @Autowired
     private GroupService groupService; // For creating group on accept become manager
+
+    @Autowired
+    private MembershipService membershipService;
 
     @Transactional
     public String sendJoinRequest(Long groupId, GroupJoinRequestDto request) {
@@ -200,11 +204,11 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public String acceptJoinRequest(Long groupId, Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("GM not found"));
 
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
@@ -244,7 +248,7 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public String acceptRemoveRequest(Long groupId, Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
@@ -265,10 +269,7 @@ public class GroupRequestService {
         }
 
         // Remove membership
-        membershipRepository.delete(req.getMembership());
-
-        // Update quorumK based on type (decrease if applicable)
-        updateQuorumKOnRemove(group, req.getMembership().getGroupRole().getRoleName());
+        membershipService.removeMember(req.getMembership().getMembershipId(), groupId);
 
         req.setStatus(RequestStatus.ACCEPTED);
         groupRemoveRequestRepository.save(req);
@@ -290,15 +291,6 @@ public class GroupRequestService {
         groupRepository.save(group);
     }
 
-    private void updateQuorumKOnRemove(Group group, String roleName) {
-        GroupAuthType type = group.getGroupAuthType();
-        if (type == GroupAuthType.B) {
-            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
-        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
-            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PANELIST in C
-        } // D/A: No auto-change
-        groupRepository.save(group);
-    }
 
     // Updated GroupRequestService with reject methods
     // Add these to the existing GroupRequestService class

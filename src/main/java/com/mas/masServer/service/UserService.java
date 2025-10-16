@@ -241,18 +241,20 @@ public class UserService {
         
                 // Generate presigned URL (expires in 10 minutes)
         String fileId = user.getImageName();
-        String presignedUrl;
-        try {
-            presignedUrl = minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(bucketName)
-                            .object(fileId)
-                            .expiry(10, TimeUnit.MINUTES)
-                            .build()
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate presigned URL", e);
+        String presignedUrl="";
+        if(fileId!=null){
+                try {
+                presignedUrl = minioClient.getPresignedObjectUrl(
+                        GetPresignedObjectUrlArgs.builder()
+                                .method(Method.GET)
+                                .bucket(bucketName)
+                                .object(fileId)
+                                .expiry(10, TimeUnit.MINUTES)
+                                .build()
+                );
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to generate presigned URL", e);
+            }
         }
         
         // Map to DTO (exclude password)

@@ -3,7 +3,7 @@ package com.mas.masServer.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.sql.Blob;
+// import java.sql.Blob;
 import java.time.LocalDate;
 
 @Entity
