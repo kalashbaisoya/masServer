@@ -9,6 +9,7 @@ import lombok.Data;
 public class BecomeManagerRequestResponseDto {
     private Long requestId;
     private Long userId;
+    private String emailId;
     private GroupAuthType groupAuthType;
     private RequestStatus status;
     private String requestDescription;

@@ -382,4 +382,26 @@ public class GroupRequestService {
 
         return "Remove request rejected";
     }
+
+    // All Authenticated Users
+    public List<BecomeManagerRequestResponseDto> viewMyBecomeManagerRequests() {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<BecomeManagerRequest> requests = becomeManagerRequestRepository.findByUserAndStatus(user, RequestStatus.PENDING);
+        List<BecomeManagerRequestResponseDto> response = requests.stream().map(r -> {
+            BecomeManagerRequestResponseDto dto = new BecomeManagerRequestResponseDto();
+            dto.setRequestId(r.getRequestId());
+            dto.setUserId(r.getUser().getUserId());
+            dto.setEmailId(r.getUser().getEmailId());
+            dto.setGroupName(r.getGroupName());
+            dto.setStatus(r.getStatus());
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(user.getUserId(), "group_manager_request", "view_my", null, null, "Viewed own pending become manager requests");
+
+        return response;
+    }
 }

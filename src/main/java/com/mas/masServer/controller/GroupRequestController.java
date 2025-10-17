@@ -81,4 +81,10 @@ public class GroupRequestController {
     public ResponseEntity<String> rejectRemoveRequest(@PathVariable Long groupId, @PathVariable Long requestId) {
         return ResponseEntity.ok(groupRequestService.rejectRemoveRequest(groupId, requestId));
     }
+
+    // ALL USERS INCLUDINNG ADMIN 
+    @GetMapping("/my-become-manager")
+    public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewMyBecomeManagerRequests() {
+        return ResponseEntity.ok(groupRequestService.viewMyBecomeManagerRequests());
+    }
 }
