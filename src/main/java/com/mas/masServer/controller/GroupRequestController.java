@@ -87,10 +87,16 @@ public class GroupRequestController {
     public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewMyBecomeManagerRequests() {
         return ResponseEntity.ok(groupRequestService.viewMyBecomeManagerRequests());
     }
-    
+
     // ALL USERS INCLUDINNG ADMIN 
     @GetMapping("/my-join")
     public ResponseEntity<List<GroupJoinRequestResponseDto>> viewMyJoinGroupRequests() {
         return ResponseEntity.ok(groupRequestService.viewMyJoinGroupRequests());
+    }
+
+    // ONLY GROUP_MEMBERS
+    @GetMapping("/my-request/{membershipId}/remove")
+    public ResponseEntity<List<GroupRemoveRequestResponseDto>> viewMyRemoveFromGroupRequests(@PathVariable Long membershipId) {
+        return ResponseEntity.ok(groupRequestService.viewMyRemoveFromGroupRequests(membershipId));
     }
 }

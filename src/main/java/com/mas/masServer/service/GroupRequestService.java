@@ -406,6 +406,31 @@ public class GroupRequestService {
         return response;
     }
 
+    // Authenticated Group Members Only
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
+    public List<GroupRemoveRequestResponseDto> viewMyRemoveFromGroupRequests(Long membershipId) {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Membership member = membershipRepository.findById(membershipId)
+                .orElseThrow(()-> new RuntimeException("Invalid MembershipId"));
+
+        if(!member.getUser().getEmailId().equals(emailId)){
+            throw new RuntimeException("Unauthorized: cannot view remove requests for this membership");
+        }
+
+        List<GroupRemoveRequest> requests = groupRemoveRequestRepository.findByMembershipMembershipIdAndStatus(membershipId, RequestStatus.PENDING);
+        List<GroupRemoveRequestResponseDto> response = requests.stream().map(r -> {
+            GroupRemoveRequestResponseDto dto = mapToGroupRemoveRequestDto(r);
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(user.getUserId(), "group_remove_request", "view_my", null, null, "Viewed own pending remove from group requests");
+
+        return response;
+    }
+
     /**
      * Map a GroupJoinRequest entity to GroupJoinRequestResponseDto.
      */
@@ -468,6 +493,67 @@ public class GroupRequestService {
         if (r.getUser() != null) {
             dto.setUserId(r.getUser().getUserId());
             dto.setEmailId(r.getUser().getEmailId());
+        }
+
+        return dto;
+    }
+
+    private GroupRemoveRequestResponseDto mapToGroupRemoveRequestDto(GroupRemoveRequest r) {
+        GroupRemoveRequestResponseDto dto = new GroupRemoveRequestResponseDto();
+        if (r == null) return dto;
+
+        dto.setRequestId(r.getRequestId());
+        dto.setStatus(r.getStatus());
+
+        Membership m = r.getMembership();
+        if (m != null) {
+            dto.setMembershipId(m.getMembershipId());
+            dto.setGroupRoleName(m.getGroupRole() != null ? m.getGroupRole().getRoleName() : null);
+
+            if (m.getUser() != null) {
+                dto.setReqMemberEmailId(m.getUser().getEmailId());
+
+                String first = m.getUser().getFirstName();
+                String middle = m.getUser().getMiddleName();
+                String last = m.getUser().getLastName();
+                StringBuilder full = new StringBuilder();
+                if (first != null && !first.trim().isEmpty()) full.append(first.trim());
+                if (middle != null && !middle.trim().isEmpty()) {
+                    if (full.length() > 0) full.append(' ');
+                    full.append(middle.trim());
+                }
+                if (last != null && !last.trim().isEmpty()) {
+                    if (full.length() > 0) full.append(' ');
+                    full.append(last.trim());
+                }
+                String fullName = full.toString();
+                if (fullName.isEmpty()) fullName = m.getUser().getEmailId();
+                dto.setReqMemberName(fullName);
+            } else {
+                dto.setReqMemberEmailId(null);
+                dto.setReqMemberName(null);
+            }
+
+            if (m.getGroup() != null) {
+                dto.setGroupName(m.getGroup().getGroupName());
+                dto.setToGroupId(m.getGroup().getGroupId());
+            } else {
+                dto.setGroupName(null);
+                dto.setToGroupId(null);
+            }
+        } else {
+            // fallback when membership is not available on the request
+            dto.setMembershipId(null);
+            dto.setGroupRoleName(null);
+            dto.setReqMemberEmailId(null);
+            dto.setReqMemberName(null);
+            if (r.getGroup() != null) {
+                dto.setGroupName(r.getGroup().getGroupName());
+                dto.setToGroupId(r.getGroup().getGroupId());
+            } else {
+                dto.setGroupName(null);
+                dto.setToGroupId(null);
+            }
         }
 
         return dto;
