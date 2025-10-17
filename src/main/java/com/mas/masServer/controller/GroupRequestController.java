@@ -35,13 +35,13 @@ public class GroupRequestController {
 
     // View all join requests for a group (GM)
     @GetMapping("/groups/{groupId}/join-requests")
-    public ResponseEntity<List<GroupJoinRequestResponseDto>> viewJoinRequests(@PathVariable Long groupId) {
+    public ResponseEntity<List<GroupJoinRequestResponseDto>> viewAllGroupJoinRequestByGroupId(@PathVariable Long groupId) {
         return ResponseEntity.ok(groupRequestService.viewJoinRequests(groupId));
     }
 
     // View all become manager requests (admin)
     @GetMapping("/become-manager-requests")
-    public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewBecomeManagerRequests() {
+    public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewAllBecomeManagerRequestsToAdmin() {
         return ResponseEntity.ok(groupRequestService.viewBecomeManagerRequests());
     }
 
