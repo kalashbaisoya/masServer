@@ -9,7 +9,11 @@ import lombok.Data;
 @Data
 public class GroupJoinRequestResponseDto {
     private Long requestId;
-    private Long userId;
+    private Long requestUserId;
+    private String requestUserFullName;
+    private String requestUserEmailId;
+    private Long requestGroupId;
+    private String requestGroupName;
     private RequestStatus status;
     private LocalDateTime requestedOn;
     private String requestDescription;

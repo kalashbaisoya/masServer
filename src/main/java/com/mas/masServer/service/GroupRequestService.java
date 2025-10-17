@@ -143,12 +143,7 @@ public class GroupRequestService {
 
         List<GroupJoinRequest> requests = groupJoinRequestRepository.findByGroupGroupId(groupId);
         return requests.stream().map(r -> {
-            GroupJoinRequestResponseDto dto = new GroupJoinRequestResponseDto();
-            dto.setRequestId(r.getRequestId());
-            dto.setUserId(r.getUser().getUserId());
-            dto.setStatus(r.getStatus());
-            dto.setRequestedOn(r.getRequestedOn());
-            dto.setRequestDescription(r.getRequestDescription());
+            GroupJoinRequestResponseDto dto = mapToGroupJoinRequestDto(r);
             return dto;
         }).collect(Collectors.toList());
     }
@@ -164,13 +159,7 @@ public class GroupRequestService {
 
         List<BecomeManagerRequest> requests = becomeManagerRequestRepository.findAll();
         return requests.stream().map(r -> {
-            BecomeManagerRequestResponseDto dto = new BecomeManagerRequestResponseDto();
-            dto.setRequestId(r.getRequestId());
-            dto.setUserId(r.getUser().getUserId());
-            dto.setGroupAuthType(r.getGroupAuthType());
-            dto.setStatus(r.getStatus());
-            dto.setRequestDescription(r.getRequestDescription());
-            dto.setGroupName(r.getGroupName());
+            BecomeManagerRequestResponseDto dto = mapToBecomeManagerRequestDto(r);
             return dto;
         }).collect(Collectors.toList());
     }
@@ -322,7 +311,7 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
     public String rejectJoinRequest(Long groupId, Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
@@ -391,12 +380,7 @@ public class GroupRequestService {
 
         List<BecomeManagerRequest> requests = becomeManagerRequestRepository.findByUserAndStatus(user, RequestStatus.PENDING);
         List<BecomeManagerRequestResponseDto> response = requests.stream().map(r -> {
-            BecomeManagerRequestResponseDto dto = new BecomeManagerRequestResponseDto();
-            dto.setRequestId(r.getRequestId());
-            dto.setUserId(r.getUser().getUserId());
-            dto.setEmailId(r.getUser().getEmailId());
-            dto.setGroupName(r.getGroupName());
-            dto.setStatus(r.getStatus());
+            BecomeManagerRequestResponseDto dto = mapToBecomeManagerRequestDto(r);
             return dto;
         }).collect(Collectors.toList());
 
@@ -404,4 +388,89 @@ public class GroupRequestService {
 
         return response;
     }
+
+    // ALL AUTHENTICATED USERS 
+    public List<GroupJoinRequestResponseDto> viewMyJoinGroupRequests() {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<GroupJoinRequest> requests = groupJoinRequestRepository.findByUserAndStatus(user, RequestStatus.PENDING);
+        List<GroupJoinRequestResponseDto> response = requests.stream().map(r -> {
+            GroupJoinRequestResponseDto dto = mapToGroupJoinRequestDto(r);
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(user.getUserId(), "group_join_request", "view_my", null, null, "Viewed own pending join group requests");
+
+        return response;
+    }
+
+    /**
+     * Map a GroupJoinRequest entity to GroupJoinRequestResponseDto.
+     */
+    private GroupJoinRequestResponseDto mapToGroupJoinRequestDto(GroupJoinRequest r) {
+        GroupJoinRequestResponseDto dto = new GroupJoinRequestResponseDto();
+        if (r == null) return dto;
+
+        dto.setRequestId(r.getRequestId());
+        dto.setRequestDescription(r.getRequestDescription());
+        dto.setStatus(r.getStatus());
+        dto.setRequestedOn(r.getRequestedOn());
+
+        if (r.getUser() != null) {
+            dto.setRequestUserId(r.getUser().getUserId());
+            dto.setRequestUserEmailId(r.getUser().getEmailId());
+
+            String first = r.getUser().getFirstName();
+            String middle = r.getUser().getMiddleName();
+            String last = r.getUser().getLastName();
+
+            StringBuilder full = new StringBuilder();
+            if (first != null && !first.trim().isEmpty()) full.append(first.trim());
+            if (middle != null && !middle.trim().isEmpty()) {
+                if (full.length() > 0) full.append(' ');
+                full.append(middle.trim());
+            }
+            if (last != null && !last.trim().isEmpty()) {
+                if (full.length() > 0) full.append(' ');
+                full.append(last.trim());
+            }
+
+            String fullName = full.toString();
+            if (fullName.isEmpty()) {
+                fullName = r.getUser().getEmailId();
+            }
+            dto.setRequestUserFullName(fullName);
+        }
+
+        if (r.getGroup() != null) {
+            dto.setRequestGroupId(r.getGroup().getGroupId());
+            dto.setRequestGroupName(r.getGroup().getGroupName());
+        }
+
+        return dto;
+    }
+
+    /**
+     * Map a BecomeManagerRequest entity to BecomeManagerRequestResponseDto.
+     */
+    private BecomeManagerRequestResponseDto mapToBecomeManagerRequestDto(BecomeManagerRequest r) {
+        BecomeManagerRequestResponseDto dto = new BecomeManagerRequestResponseDto();
+        if (r == null) return dto;
+
+        dto.setRequestId(r.getRequestId());
+        dto.setGroupAuthType(r.getGroupAuthType());
+        dto.setStatus(r.getStatus());
+        dto.setRequestDescription(r.getRequestDescription());
+        dto.setGroupName(r.getGroupName());
+
+        if (r.getUser() != null) {
+            dto.setUserId(r.getUser().getUserId());
+            dto.setEmailId(r.getUser().getEmailId());
+        }
+
+        return dto;
+    }
+
 }

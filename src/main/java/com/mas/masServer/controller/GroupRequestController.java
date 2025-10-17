@@ -87,4 +87,10 @@ public class GroupRequestController {
     public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewMyBecomeManagerRequests() {
         return ResponseEntity.ok(groupRequestService.viewMyBecomeManagerRequests());
     }
+    
+    // ALL USERS INCLUDINNG ADMIN 
+    @GetMapping("/my-join")
+    public ResponseEntity<List<GroupJoinRequestResponseDto>> viewMyJoinGroupRequests() {
+        return ResponseEntity.ok(groupRequestService.viewMyJoinGroupRequests());
+    }
 }
