@@ -430,6 +430,30 @@ public class GroupRequestService {
         return response;
     }
 
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public List<GroupRemoveRequestResponseDto> viewAllRemoveFromGroupRequests(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if(!group.getManager().getEmailId().equals(currentUser.getEmailId())){
+            throw new RuntimeException("Unauthorized: Only GM can view remove requests");
+        }
+
+        List<GroupRemoveRequest> requests = groupRemoveRequestRepository.findByMembershipGroupAndStatus(group, RequestStatus.PENDING);
+        List<GroupRemoveRequestResponseDto> response = requests.stream().map(r -> {
+            GroupRemoveRequestResponseDto dto = mapToGroupRemoveRequestDto(r);
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(currentUser.getUserId(), "group_remove_request", "view", null, groupId.toString(), "Viewed pending remove from group requests");
+
+        return response;
+    }
+
     /**
      * Map a GroupJoinRequest entity to GroupJoinRequestResponseDto.
      */

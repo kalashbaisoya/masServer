@@ -33,18 +33,6 @@ public class GroupRequestController {
         return ResponseEntity.ok(groupRequestService.sendRemoveRequest(groupId, request));
     }
 
-    // View all join requests for a group (GM)
-    @GetMapping("/groups/{groupId}/join-requests")
-    public ResponseEntity<List<GroupJoinRequestResponseDto>> viewAllGroupJoinRequestByGroupId(@PathVariable Long groupId) {
-        return ResponseEntity.ok(groupRequestService.viewJoinRequests(groupId));
-    }
-
-    // View all become manager requests (admin)
-    @GetMapping("/become-manager-requests")
-    public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewAllBecomeManagerRequestsToAdmin() {
-        return ResponseEntity.ok(groupRequestService.viewBecomeManagerRequests());
-    }
-
     // Accept become manager request (admin: creates group)
     @PutMapping("/become-manager-requests/{requestId}/accept")
     public ResponseEntity<String> acceptBecomeManagerRequest(@PathVariable Long requestId) {
@@ -98,5 +86,24 @@ public class GroupRequestController {
     @GetMapping("/my-request/{membershipId}/remove")
     public ResponseEntity<List<GroupRemoveRequestResponseDto>> viewMyRemoveFromGroupRequests(@PathVariable Long membershipId) {
         return ResponseEntity.ok(groupRequestService.viewMyRemoveFromGroupRequests(membershipId));
+    }
+
+    // Only GM 
+    @GetMapping("groups/{groupId}/remove-requests")
+    public ResponseEntity<List<GroupRemoveRequestResponseDto>> viewAllRemoveFromGroupRequests(@PathVariable Long groupId) {
+        return ResponseEntity.ok(groupRequestService.viewAllRemoveFromGroupRequests(groupId));
+    }
+
+
+    // View all join requests for a group (GM)
+    @GetMapping("/groups/{groupId}/join-requests")
+    public ResponseEntity<List<GroupJoinRequestResponseDto>> viewAllGroupJoinRequestByGroupId(@PathVariable Long groupId) {
+        return ResponseEntity.ok(groupRequestService.viewJoinRequests(groupId));
+    }
+
+    // View all become manager requests (admin)
+    @GetMapping("/become-manager-requests")
+    public ResponseEntity<List<BecomeManagerRequestResponseDto>> viewAllBecomeManagerRequestsToAdmin() {
+        return ResponseEntity.ok(groupRequestService.viewBecomeManagerRequests());
     }
 }
