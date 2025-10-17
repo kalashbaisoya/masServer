@@ -115,7 +115,6 @@ public class GroupRequestService {
 
         GroupRemoveRequest removeRequest = new GroupRemoveRequest();
         removeRequest.setMembership(membership);
-        removeRequest.setGroup(group);
         removeRequest.setStatus(RequestStatus.PENDING);
         removeRequest.setRequestedOn(LocalDateTime.now());
         removeRequest.setRequestDescription(request.getRequestDescription());
@@ -547,9 +546,9 @@ public class GroupRequestService {
             dto.setGroupRoleName(null);
             dto.setReqMemberEmailId(null);
             dto.setReqMemberName(null);
-            if (r.getGroup() != null) {
-                dto.setGroupName(r.getGroup().getGroupName());
-                dto.setToGroupId(r.getGroup().getGroupId());
+            if (r.getMembership() != null) {
+                dto.setGroupName(r.getMembership().getGroup().getGroupName());
+                dto.setToGroupId(r.getMembership().getGroup().getGroupId());
             } else {
                 dto.setGroupName(null);
                 dto.setToGroupId(null);

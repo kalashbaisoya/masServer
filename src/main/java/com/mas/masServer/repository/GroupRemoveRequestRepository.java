@@ -8,7 +8,6 @@ import com.mas.masServer.entity.GroupRemoveRequest;
 import com.mas.masServer.entity.RequestStatus;
 
 public interface GroupRemoveRequestRepository extends JpaRepository<GroupRemoveRequest, Long> {
-    List<GroupRemoveRequest> findByGroupGroupId(Long groupId); // If view remove requests needed later
 
     List<GroupRemoveRequest> findByMembershipMembershipIdAndStatus(Long membershipId, RequestStatus pending);
 }

@@ -20,10 +20,6 @@ public class GroupRemoveRequest {
     @JoinColumn(name = "membership_id", nullable = false)
     private Membership membership;
 
-    @ManyToOne
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
-
     @Column(nullable = false)
     private LocalDateTime requestedOn;
 
