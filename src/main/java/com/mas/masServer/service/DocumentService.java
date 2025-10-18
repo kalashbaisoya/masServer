@@ -2,6 +2,7 @@ package com.mas.masServer.service;
 
 
 import com.mas.masServer.dto.DocumentDownloadResponse;
+import com.mas.masServer.dto.DocumentResponseDto;
 import com.mas.masServer.dto.DocumentUploadRequest;
 import com.mas.masServer.dto.DocumentUploadResponse;
 import com.mas.masServer.entity.Document;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class DocumentService {
@@ -63,6 +65,41 @@ public class DocumentService {
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final String[] ALLOWED_FILE_TYPES = {"application/pdf", "image/png", "image/jpeg"};
+
+
+    public List<DocumentResponseDto> viewAllDocumentsByGroupId(Long groupId){
+
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Validate group
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+        // Validate membership
+        Membership membership = membershipRepository.findByUserAndGroup(user, group);
+        if (membership == null || !MembershipStatus.ACTIVE.equals(membership.getStatus())) {
+            auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Not active member", "Access denied");
+            throw new RuntimeException("User is not an active member of this group");
+        }
+        List<Document> docs = documentRepository.findByMembership_Group_GroupId(groupId);
+        List<DocumentResponseDto> response = docs.stream().map(d -> {
+            DocumentResponseDto dto = mapToDocumentResponseDto(d);
+            return dto;
+        }).collect(Collectors.toList());
+
+        auditLogService.log(user.getUserId(), "group_manager_request", "view_my", null, null, "Viewed own pending become manager requests");
+
+        return response;
+    }
+
+    private DocumentResponseDto mapToDocumentResponseDto(Document d) {
+        DocumentResponseDto dto = new DocumentResponseDto();
+        dto.setDocumentId(d.getDocumentId());
+        dto.setFileName(d.getFileName());
+        dto.setFileType(d.getFileType());
+        dto.setAccessType(d.getAccessType());
+        return dto;
+    }
 
     @Transactional
     public DocumentUploadResponse uploadDocument(DocumentUploadRequest request, MultipartFile file) {
