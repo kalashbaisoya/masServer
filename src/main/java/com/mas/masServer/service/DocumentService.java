@@ -157,7 +157,7 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
 
-        // Validate membership
+        // Validate membership (that is user belongs to this group)
         Membership membership = membershipRepository.findByUserAndGroup(user, document.getMembership().getGroup());
         if (membership == null || !MembershipStatus.ACTIVE.equals(membership.getStatus())) {
             auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Not active member", "Access denied");

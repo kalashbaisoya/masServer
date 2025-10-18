@@ -28,9 +28,9 @@ public class GroupRequestController {
     }
 
     // Send remove request (group members)
-    @PostMapping("/memberships/{membershipId}/remove-request")
-    public ResponseEntity<String> sendRemoveRequest(@PathVariable Long membershipId, @RequestBody GroupRemoveRequestDto request) {
-        return ResponseEntity.ok(groupRequestService.sendRemoveRequest(membershipId, request));
+    @PostMapping("/memberships/{groupId}/remove-request")
+    public ResponseEntity<String> sendRemoveRequest(@PathVariable Long groupId, @RequestBody GroupRemoveRequestDto request) {
+        return ResponseEntity.ok(groupRequestService.sendRemoveRequest(groupId, request));
     }
 
     // Accept become manager request (admin: creates group)
