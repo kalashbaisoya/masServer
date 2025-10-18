@@ -11,9 +11,9 @@ public class Document {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long documentId;
 
-    @ManyToOne
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    // @ManyToOne
+    // @JoinColumn(name = "group_id", nullable = false)
+    // private Group group;
 
     @ManyToOne
     @JoinColumn(name = "membership_id", nullable = false)

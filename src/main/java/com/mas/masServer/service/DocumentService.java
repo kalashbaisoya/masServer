@@ -114,7 +114,7 @@ public class DocumentService {
 
         // Save document metadata
         Document document = new Document();
-        document.setGroup(group);
+        // document.setGroup(group);
         document.setMembership(membership);
         document.setFileName(fileId);
         document.setFileType(file.getContentType());
@@ -156,17 +156,16 @@ public class DocumentService {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        Group group = document.getGroup();
 
-        // Verify user is an active member of the group
-        Membership membership = membershipRepository.findByUserAndGroup(user, group);
+        // Validate membership
+        Membership membership = membershipRepository.findByUserAndGroup(user, document.getMembership().getGroup());
         if (membership == null || !MembershipStatus.ACTIVE.equals(membership.getStatus())) {
             auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Not active member", "Access denied");
             throw new RuntimeException("User is not an active member of this group");
         }
 
         // Check group access policy
-        if (!isAccessAllowed(group)) {
+        if (!isAccessAllowed(membership.getGroup())) {
             auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Quorum not met", "Access denied");
             throw new RuntimeException("Access denied: Group quorum requirements not met");
         }
