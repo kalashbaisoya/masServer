@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.mas.masServer.entity.Group;
 import com.mas.masServer.entity.Membership;
+import com.mas.masServer.entity.MembershipStatus;
 import com.mas.masServer.entity.User;
 
 public interface MembershipRepository extends JpaRepository<Membership,Long> {
@@ -24,5 +25,8 @@ public interface MembershipRepository extends JpaRepository<Membership,Long> {
     boolean existsByUserAndGroup(User user, Group group);
 
     List<Membership> findByGroup(Group group);
+
+    List<Membership> findByGroupAndStatusIn(Group group, List<MembershipStatus> status);
+
     
 }

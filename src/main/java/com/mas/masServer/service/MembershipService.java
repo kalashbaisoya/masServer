@@ -132,7 +132,11 @@ public class MembershipService {
         User currentUser = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Membership> memberships = membershipRepository.findByGroup(group);
+        List<MembershipStatus> validStatuses = List.of(MembershipStatus.ACTIVE, MembershipStatus.SUSPENDED);
+        List<Membership> memberships = membershipRepository.findByGroupAndStatusIn(group, validStatuses);
+        if (memberships== null) {
+            throw new RuntimeException("No Membership Found For the groupId: "+ groupId);
+        }
         List<MembershipResponseDto> response = memberships.stream().map(m -> {
             MembershipResponseDto dto = new MembershipResponseDto();
             dto.setMembershipId(m.getMembershipId());
@@ -420,6 +424,7 @@ public class MembershipService {
 
         // Reassign membership to dummy user
         membership.setUser(dummyUser);
+        membership.setStatus(MembershipStatus.DELETED);
         membershipRepository.save(membership);
 
         // Update quorumK
