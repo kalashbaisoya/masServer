@@ -100,17 +100,18 @@ public class GroupRequestService {
 
     @Transactional
     @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
-    public String sendRemoveRequest(Long groupId, GroupRemoveRequestDto request) {
+    public String sendRemoveRequest(Long membershipId, GroupRemoveRequestDto request) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+        // Group group = groupRepository.findById(groupId)
+        //         .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        Membership membership = membershipRepository.findByUserAndGroup(user, group);
+        Membership membership = membershipRepository.findById(membershipId)
+            .orElseThrow(()-> new RuntimeException("Invalid MembershipId ") );
         if (membership == null || !MembershipStatus.ACTIVE.equals(membership.getStatus())) {
-            throw new RuntimeException("User is not an active member of this group");
+            throw new RuntimeException("User is Suspended from the group");
         }
 
         GroupRemoveRequest removeRequest = new GroupRemoveRequest();
@@ -120,7 +121,7 @@ public class GroupRequestService {
         removeRequest.setRequestDescription(request.getRequestDescription());
         groupRemoveRequestRepository.save(removeRequest);
 
-        emailService.sendNotification(group.getManager().getEmailId(), "New Removal Request", "User " + user.getEmailId() + " requested removal from group " + group.getGroupName() + ". Description: " + request.getRequestDescription());
+        emailService.sendNotification(membership.getGroup().getManager().getEmailId(), "New Removal Request", "User " + user.getEmailId() + " requested removal from group " + membership.getGroup().getGroupName() + ". Description: " + request.getRequestDescription());
 
         auditLogService.log(user.getUserId(), "group_remove_request", "create", null, removeRequest.getRequestId().toString(), "Remove request sent");
 
