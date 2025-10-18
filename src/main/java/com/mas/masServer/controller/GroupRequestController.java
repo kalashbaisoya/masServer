@@ -28,7 +28,7 @@ public class GroupRequestController {
     }
 
     // Send remove request (group members)
-    @PostMapping("/memberships/{groupId}/remove-request")
+    @PostMapping("/groups/{groupId}/remove-request")
     public ResponseEntity<String> sendRemoveRequest(@PathVariable Long groupId, @RequestBody GroupRemoveRequestDto request) {
         return ResponseEntity.ok(groupRequestService.sendRemoveRequest(groupId, request));
     }
