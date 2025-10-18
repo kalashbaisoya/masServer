@@ -53,18 +53,19 @@ public class MembershipService {
     private GroupRepository groupRepository;
 
     @Transactional
-    public String updateMembershipStatus(Long membershipId, MembershipStatusUpdateRequest request) {
+    public String updateMembershipStatus(Long groupId, MembershipStatusUpdateRequest request) {
         // Get authenticated user
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Find membership
-        Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() -> new RuntimeException("Membership not found"));
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        // Find membership
+        Membership membership = membershipRepository.findByUserAndGroup(user, group);
         // Verify ownership and active status
-        if (!user.getUserId().equals(membership.getUser().getUserId())) {
+        if (membership==null) {
             auditLogService.log(user.getUserId(), "group_auth_state", "status_toggle", null, "Unauthorized", "Access denied");
             throw new RuntimeException("Unauthorized: You do not own this membership");
         }
@@ -74,7 +75,7 @@ public class MembershipService {
         }
 
         // Find or create GroupAuthState
-        GroupAuthState authState = groupAuthStateRepository.findById(membershipId).orElseGet(() -> {
+        GroupAuthState authState = groupAuthStateRepository.findById(membership.getMembershipId()).orElseGet(() -> {
             GroupAuthState newState = new GroupAuthState();
             newState.setMembership(membership);
             return newState;
@@ -98,7 +99,7 @@ public class MembershipService {
                 "Status toggled from " + oldStatusStr + " to " + statusStr
         );
 
-        return "Status updated to " + statusStr + " for membership " + membershipId;
+        return "Status updated to " + statusStr + " for membership " + membership.getMembershipId();
     }
 
     public List<CustomMembershipDTO> getMembershipDetailsByUserId(Long userId){

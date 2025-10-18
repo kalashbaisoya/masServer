@@ -18,11 +18,11 @@ public class MembershipController {
     @Autowired
     private MembershipService membershipService;
 
-    @PostMapping("/{membershipId}/status")
+    @PostMapping("/{groupId}/status")
     public ResponseEntity<String> toggleOnlineStatus(
-            @PathVariable Long membershipId,
+            @PathVariable Long groupId,
             @RequestBody MembershipStatusUpdateRequest request) {
-        String message = membershipService.updateMembershipStatus(membershipId, request);
+        String message = membershipService.updateMembershipStatus(groupId, request);
         return ResponseEntity.ok(message);
     }
 
