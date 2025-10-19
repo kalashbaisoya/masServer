@@ -59,9 +59,9 @@ public class GroupRequestController {
     }
 
     // Reject join request (GM)
-    @PutMapping("/groups/{groupId}/join-requests/{requestId}/reject")
-    public ResponseEntity<String> rejectJoinRequest(@PathVariable Long groupId, @PathVariable Long requestId) {
-        return ResponseEntity.ok(groupRequestService.rejectJoinRequest(groupId, requestId));
+    @PutMapping("/groups/join-requests/{requestId}/reject")
+    public ResponseEntity<String> rejectJoinRequest( @PathVariable Long requestId) {
+        return ResponseEntity.ok(groupRequestService.rejectJoinRequest( requestId));
     }
 
     // Reject remove request (GM)
