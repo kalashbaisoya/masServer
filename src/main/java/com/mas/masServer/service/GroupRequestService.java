@@ -254,7 +254,7 @@ public class GroupRequestService {
         }
 
         // Remove membership
-        membershipService.removeMember(req.getMembership().getMembershipId(), group.getGroupId());
+        membershipService.removeMember(req.getMembership().getUser().getEmailId(), group.getGroupId());
 
         req.setStatus(RequestStatus.ACCEPTED);
         groupRemoveRequestRepository.save(req);

@@ -41,18 +41,18 @@ public class MembershipController {
         return ResponseEntity.ok(membershipService.viewMyMemberships());
     }
 
-    @PutMapping("/{membershipId}/suspend")
-    public ResponseEntity<String> suspendMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
-        return ResponseEntity.ok(membershipService.suspendMember(membershipId, groupId));
+    @PutMapping("/{groupId}/suspend")
+    public ResponseEntity<String> suspendMember(@PathVariable Long groupId, @RequestParam String emailId) {
+        return ResponseEntity.ok(membershipService.suspendMember(emailId, groupId));
     }
 
-    @PutMapping("/{membershipId}/unsuspend")
-    public ResponseEntity<String> unsuspendMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
-        return ResponseEntity.ok(membershipService.unsuspendMember(membershipId, groupId));
+    @PutMapping("/{groupId}/unsuspend")
+    public ResponseEntity<String> unsuspendMember(@PathVariable Long groupId, @RequestParam String emailId) {
+        return ResponseEntity.ok(membershipService.unsuspendMember(emailId, groupId));
     }
 
-    @DeleteMapping("/{membershipId}/remove")
-    public ResponseEntity<String> removeMember(@PathVariable Long membershipId, @RequestParam Long groupId) {
-        return ResponseEntity.ok(membershipService.removeMember(membershipId, groupId));
+    @DeleteMapping("/{groupId}/remove")
+    public ResponseEntity<String> removeMember(@PathVariable Long groupId, @RequestParam String emailId) {
+        return ResponseEntity.ok(membershipService.removeMember(emailId, groupId));
     }
 }

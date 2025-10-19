@@ -279,15 +279,18 @@ public class MembershipService {
 
     @Transactional
     @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
-    public String suspendMember(Long membershipId, Long groupId) {
-        Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() -> new RuntimeException("Membership not found"));
-
+    public String suspendMember(String memberEmailId, Long groupId) {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        User memberUser = userRepository.findByEmailId(memberEmailId)
+                .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
+        Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
 
         // Validate membership belongs to group
-        if (!membership.getGroup().getGroupId().equals(groupId)) {
+        if (membership==null) {
             throw new RuntimeException("Membership does not belong to this group");
         }
 
@@ -312,26 +315,26 @@ public class MembershipService {
                 "Your membership in group '" + group.getGroupName() + "' has been suspended.");
 
         // Audit
-        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User gmUser = userRepository.findByEmailId(gmEmail)
-                .orElseThrow(() -> new RuntimeException("GM not found"));
-        auditLogService.log(gmUser.getUserId(), "membership", "suspend", null, 
-                membershipId + ":" + groupId, "Member suspended by GM");
+        auditLogService.log(gmUser.getUserId(), "membership", "suspend", "active", 
+                membership.getMembershipId() + ":" + groupId, "Member suspended by GM");
 
         return "Member suspended successfully";
     }
 
     @Transactional
     @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
-    public String unsuspendMember(Long membershipId, Long groupId) {
-        Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() -> new RuntimeException("Membership not found"));
-
+    public String unsuspendMember(String memberEmailId, Long groupId) {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        User memberUser = userRepository.findByEmailId(memberEmailId)
+                .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
+        Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
 
         // Validate membership belongs to group
-        if (!membership.getGroup().getGroupId().equals(groupId)) {
+        if (membership==null) {
             throw new RuntimeException("Membership does not belong to this group");
         }
 
@@ -356,11 +359,8 @@ public class MembershipService {
                 "Your membership in group '" + group.getGroupName() + "' has been restored to active.");
 
         // Audit
-        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User gmUser = userRepository.findByEmailId(gmEmail)
-                .orElseThrow(() -> new RuntimeException("GM not found"));
-        auditLogService.log(gmUser.getUserId(), "membership", "unsuspend", null, 
-                membershipId + ":" + groupId, "Member unsuspended by GM");
+        auditLogService.log(gmUser.getUserId(), "membership", "unsuspend", "suspended", 
+                membership.getMembershipId() + ":" + groupId, "Member unsuspended by GM");
 
         return "Member unsuspended successfully";
     }
@@ -387,15 +387,18 @@ public class MembershipService {
 
     @Transactional
     @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
-    public String removeMember(Long membershipId, Long groupId) {
-        Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() -> new RuntimeException("Membership not found"));
-
+    public String removeMember(String memberEmailId, Long groupId) {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User gmUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        User memberUser = userRepository.findByEmailId(memberEmailId)
+                .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
+        Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
 
         // Validate membership belongs to group
-        if (!membership.getGroup().getGroupId().equals(groupId)) {
+        if (membership==null) {
             throw new RuntimeException("Membership does not belong to this group");
         }
 
@@ -411,8 +414,8 @@ public class MembershipService {
 
         // Create dummy user
         User dummyUser = new User();
-        dummyUser.setEmailId(membershipId + "+" + originalUser.getEmailId());
-        dummyUser.setContactNumber(membershipId + "+" + originalUser.getContactNumber());
+        dummyUser.setEmailId(membership.getMembershipId() + "+" + originalUser.getEmailId());
+        dummyUser.setContactNumber(membership.getMembershipId() + "+" + originalUser.getContactNumber());
         dummyUser.setFirstName(originalUser.getFirstName());
         dummyUser.setLastName(originalUser.getLastName());
         dummyUser.setRole(originalUser.getRole());
@@ -439,11 +442,8 @@ public class MembershipService {
                 "You have been removed from group '" + group.getGroupName() + "'.");
 
         // Audit
-        String gmEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User gmUser = userRepository.findByEmailId(gmEmail)
-                .orElseThrow(() -> new RuntimeException("GM not found"));
         auditLogService.log(gmUser.getUserId(), "membership", "remove", null,
-                membershipId + ":" + groupId, "Member removed by GM, reassigned to dummy user");
+                membership.getMembershipId() + ":" + groupId, "Member removed by GM, reassigned to dummy user");
 
         return "Member removed successfully";
     }
