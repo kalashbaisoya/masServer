@@ -40,9 +40,9 @@ public class GroupRequestController {
     }
 
     // Accept join request (GM: adds member)
-    @PutMapping("/groups/{groupId}/join-requests/{requestId}/accept")
-    public ResponseEntity<String> acceptJoinRequest(@PathVariable Long groupId, @PathVariable Long requestId) {
-        return ResponseEntity.ok(groupRequestService.acceptJoinRequest(groupId, requestId));
+    @PutMapping("groups/join-requests/{requestId}/accept")
+    public ResponseEntity<String> acceptJoinRequest(@PathVariable Long requestId) {
+        return ResponseEntity.ok(groupRequestService.acceptJoinRequest(requestId));
     }
 
     // Accept remove request (GM: removes member)

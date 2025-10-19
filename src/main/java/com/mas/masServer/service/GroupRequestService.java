@@ -192,20 +192,19 @@ public class GroupRequestService {
 
     @Transactional
     @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
-    public String acceptJoinRequest(Long groupId, Long requestId) {
+    public String acceptJoinRequest(Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("GM not found"));
 
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+        GroupJoinRequest req = groupJoinRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        Group group = req.getGroup();
 
         if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
             throw new RuntimeException("Unauthorized: Only GM can accept join requests");
         }
-
-        GroupJoinRequest req = groupJoinRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
 
         if (req.getStatus() != RequestStatus.PENDING) {
             throw new RuntimeException("Request already processed");
