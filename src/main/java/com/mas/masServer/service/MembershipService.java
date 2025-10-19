@@ -285,6 +285,10 @@ public class MembershipService {
                 .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        // Validate caller is GM of this particular group
+        if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
+            throw new RuntimeException("Unauthorized: Current User is not the GM of this group");
+        }
         User memberUser = userRepository.findByEmailId(memberEmailId)
                 .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
         Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
@@ -329,6 +333,10 @@ public class MembershipService {
                 .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        // Validate caller is GM of this particular group
+        if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
+            throw new RuntimeException("Unauthorized: Current User is not the GM of this group");
+        }
         User memberUser = userRepository.findByEmailId(memberEmailId)
                 .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
         Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
@@ -393,6 +401,10 @@ public class MembershipService {
                 .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
+        // Validate caller is GM of this particular group
+        if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
+            throw new RuntimeException("Unauthorized: Current User is not the GM of this group");
+        }
         User memberUser = userRepository.findByEmailId(memberEmailId)
                 .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
         Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);

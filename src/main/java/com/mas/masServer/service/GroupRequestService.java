@@ -415,6 +415,9 @@ public class GroupRequestService {
         // }
 
         List<GroupRemoveRequest> requests = groupRemoveRequestRepository.findByMembershipUserAndStatus(user, RequestStatus.PENDING);
+        if(requests==null){
+            throw new RuntimeException("No Remove Requests Found For this User");
+        }
         List<GroupRemoveRequestResponseDto> response = requests.stream().map(r -> {
             GroupRemoveRequestResponseDto dto = mapToGroupRemoveRequestDto(r);
             return dto;
