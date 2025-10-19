@@ -4,6 +4,7 @@ package com.mas.masServer.service;
 import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.CustomMembershipDTO;
 import com.mas.masServer.dto.MembershipResponseDto;
+import com.mas.masServer.dto.MembershipStatusResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
 import com.mas.masServer.entity.Group;
 import com.mas.masServer.entity.GroupAuthState;
@@ -391,6 +392,52 @@ public class MembershipService {
             group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
         } // D: Set by GM separately; A: No change
         groupRepository.save(group);
+    }
+
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
+    public List<MembershipStatusResponseDto> viewMembershipStatusesByGroup(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Membership member = membershipRepository.findByUserAndGroup(currentUser,group);
+
+        // Validate membership belongs to group
+        if (member==null) {
+            throw new RuntimeException("Membership does not belong to this group");
+        }
+        List<GroupAuthState> authStates = groupAuthStateRepository.findByMembershipGroup(group);
+        List<MembershipStatusResponseDto> response = authStates.stream()
+                .filter(state -> state.getMembership().getStatus() != MembershipStatus.SUSPENDED
+                        && state.getMembership().getUser().getIsEmailVerified()) // Exclude suspended and dummy users
+                .map(state -> {
+                    Membership membership = state.getMembership();
+                    MembershipStatusResponseDto dto = new MembershipStatusResponseDto();
+                    dto.setUserId(membership.getUser().getUserId());
+                    dto.setEmailId(membership.getUser().getEmailId());
+                    dto.setGroupRoleName(membership.getGroupRole().getRoleName());
+                    dto.setIsOnline(state.getIsOnline());
+                    dto.setLastUpdated(state.getLastUpdated());
+                    String firstName = membership.getUser().getFirstName();
+                    String middleName = membership.getUser().getMiddleName();
+                    String lastName = membership.getUser().getLastName();
+
+                    // Safely build full name (ignores null or empty parts)
+                    String fullName = String.join(" ", 
+                        firstName != null ? firstName.trim() : "", 
+                        (middleName != null && !middleName.trim().isEmpty()) ? middleName.trim() : "", 
+                        lastName != null ? lastName.trim() : ""
+                    ).trim().replaceAll(" +", " ");
+
+                    dto.setUserName(fullName);
+                    return dto;
+                }).collect(Collectors.toList());
+
+        auditLogService.log(currentUser.getUserId(), "group_auth_state", "view", null, groupId.toString(), "Viewed membership statuses for group");
+
+        return response;
     }
 
     @Transactional

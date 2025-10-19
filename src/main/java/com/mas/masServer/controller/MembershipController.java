@@ -2,6 +2,7 @@ package com.mas.masServer.controller;
 
 import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.MembershipResponseDto;
+import com.mas.masServer.dto.MembershipStatusResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
 import com.mas.masServer.service.MembershipService;
 
@@ -54,5 +55,10 @@ public class MembershipController {
     @DeleteMapping("/{groupId}/remove")
     public ResponseEntity<String> removeMember(@PathVariable Long groupId, @RequestParam String emailId) {
         return ResponseEntity.ok(membershipService.removeMember(emailId, groupId));
+    }
+
+    @GetMapping("/memberships-status")
+    public ResponseEntity<List<MembershipStatusResponseDto>> viewMembershipStatusesByGroup(@RequestParam Long groupId) {
+        return ResponseEntity.ok(membershipService.viewMembershipStatusesByGroup(groupId));
     }
 }

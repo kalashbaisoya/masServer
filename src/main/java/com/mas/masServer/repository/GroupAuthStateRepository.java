@@ -14,4 +14,6 @@ public interface GroupAuthStateRepository extends JpaRepository<GroupAuthState, 
     long countByMembershipGroupAndIsOnline(Group group, IsOnline isOnline);
 
     GroupAuthState findByMembershipMembershipIdAndIsOnline(Long membershipId, IsOnline isOnline);
+
+    List<GroupAuthState> findByMembershipGroup(Group group);
 }
