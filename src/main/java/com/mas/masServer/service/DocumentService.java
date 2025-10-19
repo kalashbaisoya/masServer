@@ -25,6 +25,7 @@ import io.minio.http.Method;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +67,7 @@ public class DocumentService {
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final String[] ALLOWED_FILE_TYPES = {"application/pdf", "image/png", "image/jpeg"};
 
-
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
     public List<DocumentResponseDto> viewAllDocumentsByGroupId(Long groupId){
 
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -102,6 +103,7 @@ public class DocumentService {
     }
 
     @Transactional
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
     public DocumentUploadResponse uploadDocument(DocumentUploadRequest request, MultipartFile file) {
         // Get authenticated user
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -183,6 +185,7 @@ public class DocumentService {
 
 
     @Transactional
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
     public DocumentDownloadResponse downloadDocument(Long documentId) {
         // Get authenticated user
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
