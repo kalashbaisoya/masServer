@@ -46,9 +46,9 @@ public class GroupRequestController {
     }
 
     // Accept remove request (GM: removes member)
-    @PutMapping("/groups/{groupId}/remove-requests/{requestId}/accept")
-    public ResponseEntity<String> acceptRemoveRequest(@PathVariable Long groupId, @PathVariable Long requestId) {
-        return ResponseEntity.ok(groupRequestService.acceptRemoveRequest(groupId, requestId));
+    @PutMapping("/groups/remove-requests/{requestId}/accept")
+    public ResponseEntity<String> acceptRemoveRequest(@PathVariable Long requestId) {
+        return ResponseEntity.ok(groupRequestService.acceptRemoveRequest(requestId));
     }
 
 
