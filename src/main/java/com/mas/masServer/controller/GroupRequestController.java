@@ -77,7 +77,7 @@ public class GroupRequestController {
     }
 
     // ALL USERS INCLUDINNG ADMIN 
-    @GetMapping("/my-join-request")
+    @GetMapping("/my-join-requests")
     public ResponseEntity<List<GroupJoinRequestResponseDto>> viewMyJoinGroupRequests() {
         return ResponseEntity.ok(groupRequestService.viewMyJoinGroupRequests());
     }
