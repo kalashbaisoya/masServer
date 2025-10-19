@@ -339,21 +339,18 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#_GROUP_MANAGER')")
-    public String rejectRemoveRequest(Long groupId, Long requestId) {
+    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    public String rejectRemoveRequest(Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+        GroupRemoveRequest req = groupRemoveRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        Group group = req.getMembership().getGroup();
 
         if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
             throw new RuntimeException("Unauthorized: Only GM can reject remove requests");
         }
-
-        GroupRemoveRequest req = groupRemoveRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
 
         if (req.getStatus() != RequestStatus.PENDING) {
             throw new RuntimeException("Request already processed");

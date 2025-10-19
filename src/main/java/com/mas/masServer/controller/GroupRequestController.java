@@ -65,9 +65,9 @@ public class GroupRequestController {
     }
 
     // Reject remove request (GM)
-    @PutMapping("/groups/{groupId}/remove-requests/{requestId}/reject")
-    public ResponseEntity<String> rejectRemoveRequest(@PathVariable Long groupId, @PathVariable Long requestId) {
-        return ResponseEntity.ok(groupRequestService.rejectRemoveRequest(groupId, requestId));
+    @PutMapping("/groups/remove-requests/{requestId}/reject")
+    public ResponseEntity<String> rejectRemoveRequest(@PathVariable Long requestId) {
+        return ResponseEntity.ok(groupRequestService.rejectRemoveRequest(requestId));
     }
 
     // ALL USERS INCLUDINNG ADMIN 
