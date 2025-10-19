@@ -26,6 +26,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -314,13 +315,15 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUserProfile(Long userId, UserUpdateRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+    public void updateUserProfile(UserUpdateRequest request) {
+        String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User user = userRepository.findByEmailId(emailId).orElseThrow(() -> new RuntimeException("User not found"));
         // Update fields (add validation, e.g., unique contactNumber)
         user.setFirstName(request.getFirstName());
         // ... other fields ...
         userRepository.save(user);
-        auditLogService.log(userId, "users", "firstName", null, request.getFirstName(), "Profile updated");
+        auditLogService.log(user.getUserId(), "users", "firstName", null, request.getFirstName(), "Profile updated");
     }
 
     @Transactional

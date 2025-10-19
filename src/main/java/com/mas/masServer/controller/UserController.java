@@ -96,9 +96,9 @@ public class UserController {
     /**
      * Update user profile (authenticated)
      */
-    @PutMapping("/users/{userId}")
-    public ResponseEntity<String> updateUserProfile(@PathVariable Long userId, @RequestBody UserUpdateRequest request) {
-        userService.updateUserProfile(userId, request);
+    @PutMapping("/users")
+    public ResponseEntity<String> updateUserProfile( @RequestBody UserUpdateRequest request) {
+        userService.updateUserProfile(request);
         return ResponseEntity.ok("Profile updated successfully");
     }
 
