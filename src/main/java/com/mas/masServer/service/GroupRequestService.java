@@ -341,7 +341,7 @@ public class GroupRequestService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_#groupId_GROUP_MANAGER')")
+    @PreAuthorize("hasAuthority('GROUP_ROLE_#_GROUP_MANAGER')")
     public String rejectRemoveRequest(Long groupId, Long requestId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
@@ -407,19 +407,19 @@ public class GroupRequestService {
 
     // Authenticated Group Members Only
     @PreAuthorize("hasAnyAuthority('GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
-    public List<GroupRemoveRequestResponseDto> viewMyRemoveFromGroupRequests(Long membershipId) {
+    public List<GroupRemoveRequestResponseDto> viewMyRemoveFromGroupRequests() {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Membership member = membershipRepository.findById(membershipId)
-                .orElseThrow(()-> new RuntimeException("Invalid MembershipId"));
+        // Membership member = membershipRepository.findById(membershipId)
+        //         .orElseThrow(()-> new RuntimeException("Invalid MembershipId"));
 
-        if(!member.getUser().getEmailId().equals(emailId)){
-            throw new RuntimeException("Unauthorized: cannot view remove requests for this membership");
-        }
+        // if(!member.getUser().getEmailId().equals(emailId)){
+        //     throw new RuntimeException("Unauthorized: cannot view remove requests for this membership");
+        // }
 
-        List<GroupRemoveRequest> requests = groupRemoveRequestRepository.findByMembershipMembershipIdAndStatus(membershipId, RequestStatus.PENDING);
+        List<GroupRemoveRequest> requests = groupRemoveRequestRepository.findByMembershipUserAndStatus(user, RequestStatus.PENDING);
         List<GroupRemoveRequestResponseDto> response = requests.stream().map(r -> {
             GroupRemoveRequestResponseDto dto = mapToGroupRemoveRequestDto(r);
             return dto;
