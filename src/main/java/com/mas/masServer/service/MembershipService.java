@@ -20,6 +20,7 @@ import com.mas.masServer.repository.GroupRoleRepository;
 import com.mas.masServer.repository.MembershipRepository;
 import com.mas.masServer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,9 @@ public class MembershipService {
 
     @Autowired
     private GroupRepository groupRepository;
+    
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public String updateMembershipStatus(Long groupId, MembershipStatusUpdateRequest request) {
@@ -515,5 +519,29 @@ public class MembershipService {
             group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
         } // D/A: No change
         groupRepository.save(group);
+    }
+
+    @Transactional(readOnly = true)
+    public void broadcastMembershipStatuses(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        List<GroupAuthState> authStates = groupAuthStateRepository.findByMembershipGroup(group);
+        List<MembershipStatusResponseDto> response = authStates.stream()
+                .filter(state -> state.getMembership().getStatus() != MembershipStatus.SUSPENDED
+                        && state.getMembership().getUser().getIsEmailVerified())
+                .map(state -> {
+                    Membership membership = state.getMembership();
+                    MembershipStatusResponseDto dto = new MembershipStatusResponseDto();
+                    // dto.setMembershipId(membership.getMembershipId());
+                    dto.setUserId(membership.getUser().getUserId());
+                    dto.setEmailId(membership.getUser().getEmailId());
+                    dto.setGroupRoleName(membership.getGroupRole().getRoleName());
+                    dto.setIsOnline(state.getIsOnline());
+                    dto.setLastUpdated(state.getLastUpdated());
+                    return dto;
+                }).collect(Collectors.toList());
+
+        messagingTemplate.convertAndSend("/topic/group/" + groupId + "/membership-status", response);
     }
 }
