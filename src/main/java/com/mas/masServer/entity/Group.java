@@ -29,5 +29,8 @@ public class Group {
 
     @Column(nullable = true)
     private LocalDate dateTime;
+
+    @Column(nullable = false)
+    private String status = "ACTIVE";
 }
 

@@ -39,6 +39,9 @@ public class GroupService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private MembershipService membershipService;
+
     @PostConstruct
     public void initGroupRoleRepo(){
         if(groupRoleRepository.count()==0){
@@ -57,7 +60,7 @@ public class GroupService {
     }
 
     public List<GroupResponse> viewAllGroups() {
-        List<Group> groups = groupRepository.findAll();
+        List<Group> groups = groupRepository.findByStatus("ACTIVE");
         return groups.stream().map(g -> {
             GroupResponse resp = new GroupResponse();
             resp.setGroupId(g.getGroupId());
@@ -133,13 +136,24 @@ public class GroupService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        // Cascade delete memberships, documents, etc. (assuming DB cascades or soft-delete)
-        membershipRepository.deleteByGroup(group);
-        groupRepository.delete(group);
+        // finding memberships which were not deleted by the GM in past 
+        // to achieve our objective of deleting the undeleted [(-_-)]
+        List<MembershipStatus> validStatuses = List.of(MembershipStatus.ACTIVE, MembershipStatus.SUSPENDED);
+        List<Membership> members = membershipRepository.findByGroupAndStatusIn(group, validStatuses);
+        String orgGpName = group.getGroupName();
+        String orgGMEmail = group.getManager().getEmailId();
+
+        for (Membership membership : members) {
+            membershipService.removeMember(membership.getUser().getEmailId(), groupId);
+        }
+        group.setGroupName(""+groupId+"+"+group.getGroupName());
+        group.setStatus("DELETED");
+        // membershipRepository.deleteByGroup(group);
+        groupRepository.save(group);
 
         // Notify manager (optional)
-        String message = "The group '" + group.getGroupName() + "' (ID: " + groupId + ") has been deleted by admin.";
-        emailService.sendNotification(group.getManager().getEmailId(), "Group Deleted", message);
+        String message = "The group '" + orgGpName + "' (ID: " + groupId + ") has been deleted by admin.";
+        emailService.sendNotification(orgGMEmail, "Group Deleted", message);
 
         // Audit
         auditLogService.log(group.getManager().getUserId(), "group", "delete", group.getGroupId().toString(), null, "Group deleted by admin");

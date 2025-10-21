@@ -445,35 +445,47 @@ public class MembershipService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('GROUP_ROLE_GROUP_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER','ROLE_ADMIN')")
     public String removeMember(String memberEmailId, Long groupId) {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User gmUser = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User GM not found"));
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found : Invalid GroupId"));
-        // Validate caller is GM of this particular group
-        if (!group.getManager().getUserId().equals(gmUser.getUserId())) {
-            throw new RuntimeException("Unauthorized: Current User is not the GM of this group");
+        String currentRoleName = gmUser.getRole().getRoleName();
+        Boolean isRealGMEqualCurrUsr = group.getManager().getUserId().equals(gmUser.getUserId());
+        Boolean isCurrUsrAdmin = "ADMIN".equalsIgnoreCase(currentRoleName);
+        // Validate caller is Real GM of group, or ADMIN (GM/ ADMIN)
+        if (!isRealGMEqualCurrUsr) {
+            if (!isCurrUsrAdmin) {
+                //if neither GM of this Gp, nor an Admin then throw error 
+                throw new RuntimeException("Unauthorized: Current User is not the GM of this group");
+            }
         }
+
         User memberUser = userRepository.findByEmailId(memberEmailId)
                 .orElseThrow(() -> new RuntimeException("Member User not found: Invalid memberEmailId"));
         Membership membership = membershipRepository.findByUserAndGroup(memberUser,group);
-
-        // Validate membership belongs to group
+        // Validate membership belongs to group 
         if (membership==null) {
-            throw new RuntimeException("Membership does not belong to this group");
+            throw new RuntimeException("Membership of the user to be removed does not belong to this group");
         }
 
+        Boolean isToBeRemovedMemberGMofThisGroup = "GROUP_MANAGER".equals(membership.getGroupRole().getRoleName());
         // Prevent removing GM
-        if ("GROUP_MANAGER".equals(membership.getGroupRole().getRoleName())) {
-            throw new RuntimeException("Cannot remove the Group Manager");
+        if (isToBeRemovedMemberGMofThisGroup) {
+            if (!isCurrUsrAdmin) {
+                // if current user is GM here, then he cannot remove himself until ADMIN 
+                throw new RuntimeException("Cannot remove the Group Manager");
+            }
         }
 
         User originalUser = membership.getUser();
-        if (!"USER".equals(originalUser.getRole().getRoleName())) {
-            throw new RuntimeException("Only users with USER role can be removed");
-        }
+
+        // the below check is so funny like GM cannot delete admin from the group (|:~)))
+        // if (!"USER".equals(originalUser.getRole().getRoleName())) {
+        //     throw new RuntimeException("Only users with USER role can be removed");
+        // } 
 
         // Create dummy user
         User dummyUser = new User();
@@ -485,7 +497,6 @@ public class MembershipService {
         dummyUser.setIsEmailVerified(false);
         dummyUser.setDateOfBirth(originalUser.getDateOfBirth());
         dummyUser.setPassword("null");
-        // Copy other fields if necessary (e.g., password, security questions)
         userRepository.save(dummyUser);
 
         // Reassign membership to dummy user
@@ -500,14 +511,29 @@ public class MembershipService {
         // groupRemoveRequestRepository.findByMembership(membership)
         //         .ifPresent(groupRemoveRequestRepository::delete);
 
-        // Notify original user
-        emailService.sendNotification(originalUser.getEmailId(), "Removed from Group",
-                "You have been removed from group '" + group.getGroupName() + "'.");
+        if (!isCurrUsrAdmin|| isRealGMEqualCurrUsr) {
+            // Notify original user when current not an admin or when you are a GM for sure 
+            emailService.sendNotification(originalUser.getEmailId(), "Removed from Group",
+            "You have been removed from group '" + group.getGroupName() + "'.");
 
-        // Audit
+            // Audit
         auditLogService.log(gmUser.getUserId(), "membership", "remove", null,
                 membership.getMembershipId() + ":" + groupId, "Member removed by GM, reassigned to dummy user");
 
+            
+        }else{
+            // Notify original user when You Are Admin and not gm
+            emailService.sendNotification(originalUser.getEmailId(), "Removed from Deleted Group",
+            "You have been removed from group '" + group.getGroupName() +"' because Admin might have deleted this group.");
+
+            // Audit
+        auditLogService.log(gmUser.getUserId(), "membership", "remove", null,
+                membership.getMembershipId() + ":" + groupId, "Member removed by ADMIN, reassigned to dummy user");
+
+        }
+        
+
+        
         return "Member removed successfully";
     }
 

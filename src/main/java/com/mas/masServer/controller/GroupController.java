@@ -29,7 +29,7 @@ public class GroupController {
 
     //authenticated
     @GetMapping("/viewAll")
-    public ResponseEntity<List<GroupResponse>> viewAllGroups() {
+    public ResponseEntity<List<GroupResponse>> viewAllActiveGroups() {
         return ResponseEntity.ok(groupService.viewAllGroups());
     }
 
