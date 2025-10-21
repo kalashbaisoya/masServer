@@ -175,7 +175,7 @@ public class GroupRequestService {
 
         // Create new group with requester as GM
         CreateGroupRequest createReq = new CreateGroupRequest();
-        createReq.setGroupName("New Group for " + req.getUser().getFirstName()); // Auto-name or prompt
+        createReq.setGroupName(req.getGroupName());
         createReq.setGroupAuthType(req.getGroupAuthType());
         createReq.setManagerId(req.getUser().getUserId());
         groupService.createGroup(createReq); // Calls groupService to create
