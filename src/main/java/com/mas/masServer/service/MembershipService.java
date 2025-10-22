@@ -129,7 +129,7 @@ public class MembershipService {
     }
 
 
-    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('GROUP_ROLE_GROUP_MANAGER', 'ROLE_ADMIN','GROUP_ROLE_MEMBER','GROUP_ROLE_PANELIST')")
     public List<MembershipResponseDto> viewMembershipsByGroupId(Long groupId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
