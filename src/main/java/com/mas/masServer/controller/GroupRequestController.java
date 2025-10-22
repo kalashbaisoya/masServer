@@ -40,7 +40,7 @@ public class GroupRequestController {
     }
 
     // Accept join request (GM: adds member)
-    @PutMapping("groups/join-requests/{requestId}/accept")
+    @PutMapping("/groups/join-requests/{requestId}/accept")
     public ResponseEntity<String> acceptJoinRequest(@PathVariable Long requestId) {
         return ResponseEntity.ok(groupRequestService.acceptJoinRequest(requestId));
     }
@@ -89,7 +89,7 @@ public class GroupRequestController {
     }
 
     // Only GM 
-    @GetMapping("groups/{groupId}/remove-requests")
+    @GetMapping("/groups/{groupId}/remove-requests")
     public ResponseEntity<List<GroupRemoveRequestResponseDto>> viewAllRemoveFromGroupRequests(@PathVariable Long groupId) {
         return ResponseEntity.ok(groupRequestService.viewAllRemoveFromGroupRequests(groupId));
     }
