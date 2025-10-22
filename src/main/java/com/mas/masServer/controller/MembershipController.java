@@ -1,6 +1,7 @@
 package com.mas.masServer.controller;
 
 import com.mas.masServer.dto.AddMemberRequestDto;
+import com.mas.masServer.dto.GroupResponse;
 import com.mas.masServer.dto.MembershipResponseDto;
 import com.mas.masServer.dto.MembershipStatusResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
@@ -38,7 +39,7 @@ public class MembershipController {
     }
 
     @GetMapping("/my-memberships")
-    public ResponseEntity<List<MembershipResponseDto>> viewMyMemberships() {
+    public ResponseEntity<List<GroupResponse>> viewMyMemberships() {
         return ResponseEntity.ok(membershipService.viewMyMemberships());
     }
 

@@ -3,6 +3,7 @@ package com.mas.masServer.service;
 
 import com.mas.masServer.dto.AddMemberRequestDto;
 import com.mas.masServer.dto.CustomMembershipDTO;
+import com.mas.masServer.dto.GroupResponse;
 import com.mas.masServer.dto.MembershipResponseDto;
 import com.mas.masServer.dto.MembershipStatusResponseDto;
 import com.mas.masServer.dto.MembershipStatusUpdateRequest;
@@ -244,25 +245,25 @@ public class MembershipService {
         groupRepository.save(group);
     }
 
-    public List<MembershipResponseDto> viewMyMemberships() {
+    public List<GroupResponse> viewMyMemberships() {
         String emailId = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Membership> memberships = membershipRepository.findByUser(user);
-        List<MembershipResponseDto> response = memberships.stream().map(m -> {
-            MembershipResponseDto dto = new MembershipResponseDto();
-            dto.setMembershipId(m.getMembershipId());
+        List<GroupResponse> response = memberships.stream().map(m -> {
+            GroupResponse dto = new GroupResponse();
+            // dto.setMembershipId(m.getMembershipId());
             // dto.setUserId(m.getUser().getUserId());
-            String memberFullName = String.join(" ",
-                m.getUser().getFirstName() != null ? m.getUser().getFirstName() : "",
-                m.getUser().getMiddleName() != null ? m.getUser().getMiddleName() : "",
-                m.getUser().getLastName() != null ? m.getUser().getLastName() : ""
-            ).trim();
-            dto.setMemberName(memberFullName);
-            dto.setEmailId(m.getUser().getEmailId());
-            dto.setGroupRoleName(m.getGroupRole().getRoleName());
-            dto.setStatus(m.getStatus());
+            // String memberFullName = String.join(" ",
+            //     m.getUser().getFirstName() != null ? m.getUser().getFirstName() : "",
+            //     m.getUser().getMiddleName() != null ? m.getUser().getMiddleName() : "",
+            //     m.getUser().getLastName() != null ? m.getUser().getLastName() : ""
+            // ).trim();
+            // dto.setMemberName(memberFullName);
+            // dto.setEmailId(m.getUser().getEmailId());
+            // dto.setGroupRoleName(m.getGroupRole().getRoleName());
+            // dto.setStatus(m.getStatus());
             dto.setGroupId(m.getGroup().getGroupId());
             dto.setGroupName(m.getGroup().getGroupName());
             dto.setGroupAuthType(m.getGroup().getGroupAuthType());
@@ -274,6 +275,8 @@ public class MembershipService {
                 manager.getLastName() != null ? manager.getLastName() : ""
             ).trim();
             dto.setManagerName(fullName);
+            dto.setManagerId(m.getMembershipId());
+            dto.setQuorumK(m.getGroup().getQuorumK());
             return dto;
         }).collect(Collectors.toList());
 
