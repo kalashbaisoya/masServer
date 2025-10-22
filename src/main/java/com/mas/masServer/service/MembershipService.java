@@ -156,17 +156,17 @@ public class MembershipService {
             dto.setEmailId(m.getUser().getEmailId());
             dto.setGroupRoleName(m.getGroupRole().getRoleName());
             dto.setStatus(m.getStatus());
-            dto.setGroupId(m.getGroup().getGroupId());
-            dto.setGroupName(m.getGroup().getGroupName());
-            dto.setGroupAuthType(m.getGroup().getGroupAuthType());
-            dto.setCreatedOn(m.getGroup().getDateTime());
-            User manager = m.getGroup().getManager();
-            String managerFullName = String.join(" ",
-                manager.getFirstName() != null ? manager.getFirstName() : "",
-                manager.getMiddleName() != null ? manager.getMiddleName() : "",
-                manager.getLastName() != null ? manager.getLastName() : ""
-            ).trim();
-            dto.setManagerName(managerFullName);
+            // dto.setGroupId(m.getGroup().getGroupId());
+            // dto.setGroupName(m.getGroup().getGroupName());
+            // dto.setGroupAuthType(m.getGroup().getGroupAuthType());
+            // dto.setCreatedOn(m.getGroup().getDateTime());
+            // User manager = m.getGroup().getManager();
+            // String managerFullName = String.join(" ",
+            //     manager.getFirstName() != null ? manager.getFirstName() : "",
+            //     manager.getMiddleName() != null ? manager.getMiddleName() : "",
+            //     manager.getLastName() != null ? manager.getLastName() : ""
+            // ).trim();
+            // dto.setManagerName(managerFullName);
             return dto;
         }).collect(Collectors.toList());
 
