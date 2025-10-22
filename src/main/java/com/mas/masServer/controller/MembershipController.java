@@ -39,7 +39,7 @@ public class MembershipController {
     }
 
     @GetMapping("/my-memberships")
-    public ResponseEntity<List<GroupResponse>> viewMyMemberships() {
+    public ResponseEntity<List<GroupResponse>> viewMyMembershipsGroupDetail() {
         return ResponseEntity.ok(membershipService.viewMyMemberships());
     }
 
