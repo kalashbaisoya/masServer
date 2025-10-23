@@ -83,7 +83,7 @@ public class GroupRequestController {
     }
 
     // ONLY GROUP_MEMBERS
-    @GetMapping("/my-remove-requsts")
+    @GetMapping("/my-remove-requests")
     public ResponseEntity<List<GroupRemoveRequestResponseDto>> viewMyRemoveFromGroupRequests() {
         return ResponseEntity.ok(groupRequestService.viewMyRemoveFromGroupRequests());
     }
