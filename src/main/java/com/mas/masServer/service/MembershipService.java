@@ -275,7 +275,7 @@ public class MembershipService {
                 manager.getLastName() != null ? manager.getLastName() : ""
             ).trim();
             dto.setManagerName(fullName);
-            dto.setManagerId(m.getMembershipId());
+            dto.setManagerId(manager.getUserId());
             dto.setQuorumK(m.getGroup().getQuorumK());
             return dto;
         }).collect(Collectors.toList());
