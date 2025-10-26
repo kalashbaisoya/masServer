@@ -213,6 +213,7 @@ public class DocumentService {
         // Generate presigned URL (expires in 10 minutes)
         String fileId = document.getFileId();
         String presignedUrl;
+        String publicUrl;
         try {
             presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
@@ -222,6 +223,7 @@ public class DocumentService {
                             .expiry(10, TimeUnit.MINUTES)
                             .build()
             );
+            publicUrl = presignedUrl.replace("http://localhost:9000", "http://10.145.90.153:8082/s3");
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate presigned URL", e);
         }
@@ -230,7 +232,8 @@ public class DocumentService {
         auditLogService.log(user.getUserId(), "document", "access_granted", null, fileId, "Document accessed");
 
         DocumentDownloadResponse response = new DocumentDownloadResponse();
-        response.setDownloadUrl(presignedUrl);
+        response.setDownloadUrl(publicUrl);
+        System.out.println(publicUrl);
         response.setMessage("Access granted. Use the URL to download the document.");
         return response;
     }
