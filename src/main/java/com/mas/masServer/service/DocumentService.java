@@ -245,7 +245,8 @@ public class DocumentService {
 
             case B:
                 // Require all MEMBER + GM online
-                long totalMembers = membershipRepository.countByGroupAndGroupRoleRoleName(group, "MEMBER");
+                // long totalMembers = membershipRepository.countByGroupAndGroupRoleRoleName(group, "MEMBER");
+                long totalMembers = group.getQuorumK();
                 List<GroupAuthState> onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
                 long onlineMembers = onlineStates.stream()
@@ -260,7 +261,9 @@ public class DocumentService {
 
             case C:
                 // Require all PANELIST + GM online
-                long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PANELIST");
+                // long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PANELIST");
+                long totalPanelists = group.getQuorumK();
+
                 onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
                 long onlinePanelists = onlineStates.stream()
