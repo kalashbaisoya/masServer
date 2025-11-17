@@ -78,7 +78,8 @@ public class SecurityConfig {
             "/api/login",
             "/api/verify-otp",
             "/api/generateNewOtp",
-            "/api/security-questions"
+            "/api/security-questions",
+            "/api/ws/*"
         ).permitAll();
     }
 

@@ -23,9 +23,7 @@ spring:
             hibernate:
                 dialect: org.hibernate.dialect.PostgreSQLDialect
     security:
-        user:
-            name: admin
-            password: password123
+        DEBUG: true
 
     mail:
         host: smtp.zoho.in
@@ -45,3 +43,47 @@ minio:
     access-key: minioadmin
     secret-key: minioadmin
     bucket-name: mas-files
+
+
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          socket: TRACE            # trace low-level WebSocket handshake activity
+          socket.sockjs: TRACE      # trace SockJS fallback transport behavior
+          socket.handler: TRACE     # trace SockJS frame handler details
+        messaging:
+          simp: DEBUG               # log STOMP messages routing & broker events
+          support: DEBUG            # internal message support components
+    com:
+      mas:
+        masServer:
+          config:
+            JwtChannelInterceptor: DEBUG
+            WebSocketConfig: DEBUG
+            JwtHandShakeInterceptor: DEBUG
+            JwtUtil: DEBUG
+            WebSocketSecurityConfig: DEBUG
+          service:
+            HeartbeatService: DEBUG
+            WebSocketEventListener: DEBUG
+            HeartbeatScheduler: DEBUG
+
+          controller:
+            HeartbeatController: DEBUG
+          security:
+            JwtAuthenticationFilter: DEBUG
+          masServer: INFO
+
+  file:
+    name: logs/websocket.log
+
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 5
+      total-size-cap: 50MB
+      clean-history-on-start: true
+
+

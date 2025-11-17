@@ -18,6 +18,9 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 public class WebSocketEventListener {
 
@@ -36,13 +39,20 @@ public class WebSocketEventListener {
     @Autowired
     private MembershipService membershipService;
 
+    private static final Logger log = LoggerFactory.getLogger(WebSocketEventListener.class);
+
     @Transactional
     @EventListener
     public void handleSessionConnect(SessionConnectEvent event) {
+        log.debug("I am in connect event listener ");
+        if (event.getUser() == null) {
+            log.warn("SessionConnect/Disconnect event with null principal, sessionId={}", event.getMessage().getHeaders().get("simpSessionId"));
+            return;
+        }
         String username = event.getUser().getName();
         User user = userRepository.findByEmailId(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        log.debug("WebSocket connected for user: {}", username);
         heartbeatService.updateHeartbeat(username);
 
         List<Membership> memberships = membershipRepository.findByUser(user);
@@ -66,6 +76,7 @@ public class WebSocketEventListener {
     @Transactional
     @EventListener
     public void handleSessionDisconnect(SessionDisconnectEvent event) {
+        log.debug("I am here in method: handleSessionDisconnect");
         String username = event.getUser().getName();
         heartbeatService.removeHeartbeat(username);
 

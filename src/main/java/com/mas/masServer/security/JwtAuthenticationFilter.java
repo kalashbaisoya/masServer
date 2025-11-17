@@ -1,6 +1,9 @@
 package com.mas.masServer.security;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,11 +38,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        // System.out.println("Auth header: " + request.getHeader("Authorization"));
+        String uri = request.getRequestURI();
+        String token = null;
 
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+        // ✅ Handle WebSocket handshake requests separately
+        if (uri.startsWith("/api/ws")) {
+            token = request.getParameter("token"); // extract from query param
+            logger.info("✅ Incoming WebSocket handshake: " + uri);
+            logger.info("   QueryString: " + request.getQueryString());
+            logger.info("   Extracted token from query param: " + token);
+        } else {
+            // ✅ For normal REST endpoints
+            String header = request.getHeader("Authorization");
+            logger.info("✅ REST request: " + uri);
+            logger.info("   Authorization header: " + header);
+
+            if (header != null && header.startsWith("Bearer ")) {
+                token = header.substring(7);
+            }
+        }
+        
+        if (token != null) {
             try {
                 String username = Jwts.parser()
                         .verifyWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)))
@@ -69,4 +88,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
     // Implement JWT validation and authentication logic
+
+    // @Override
+    // protected boolean shouldNotFilter(HttpServletRequest request) {
+    //     String path = request.getRequestURI();
+    //     // Skip filtering for WebSocket handshake endpoints
+    //     return path.startsWith("/api/ws");
+    // }
+
+    
 }

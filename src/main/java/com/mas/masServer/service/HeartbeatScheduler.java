@@ -9,6 +9,9 @@ import com.mas.masServer.entity.User;
 import com.mas.masServer.repository.GroupAuthStateRepository;
 import com.mas.masServer.repository.MembershipRepository;
 import com.mas.masServer.repository.UserRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -39,12 +42,15 @@ public class HeartbeatScheduler {
     @Autowired
     private AuditLogService auditLogService;
 
+    private static final Logger log = LoggerFactory.getLogger(HeartbeatScheduler.class);
+
+
     @Scheduled(fixedRate = 30000) // Run every 30 seconds
     @Transactional
     public void checkHeartbeats() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime timeoutThreshold = now.minusSeconds(60); // 60-second timeout
-
+        log.debug("I am here in checkHeartbeats()");
         Set<String> usernames = heartbeatService.getUsernames();
         for (String username : usernames) {
             LocalDateTime lastHeartbeat = heartbeatService.getLastHeartbeat(username);

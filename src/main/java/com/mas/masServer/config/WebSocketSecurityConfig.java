@@ -1,5 +1,7 @@
 package com.mas.masServer.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -13,12 +15,14 @@ import org.springframework.security.messaging.access.intercept.MessageMatcherDel
 
 @Configuration
 @EnableWebSocketSecurity
-public class WebSocketSecurityConfig {
+public class WebSocketSecurityConfig{
+    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
 
     @Bean
     AuthorizationManager<Message<?>> messageAuthorizationManager(
             MessageMatcherDelegatingAuthorizationManager.Builder messages) {
-
+        
+                log.debug("Configuring messageAuthorizationManager at bean AuthorizationManager "+messages);
         messages
             // Allow connection setup/disconnect if authenticated
             .simpTypeMatchers(SimpMessageType.CONNECT, SimpMessageType.DISCONNECT, SimpMessageType.OTHER)
