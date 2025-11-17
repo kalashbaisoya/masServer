@@ -58,7 +58,7 @@ public class MembershipController {
         return ResponseEntity.ok(membershipService.removeMember(emailId, groupId));
     }
 
-    @GetMapping("/memberships-status")
+    @GetMapping("/view-memberships-status")
     public ResponseEntity<List<MembershipStatusResponseDto>> viewMembershipStatusesByGroup(@RequestParam Long groupId) {
         return ResponseEntity.ok(membershipService.viewMembershipStatusesByGroup(groupId));
     }
