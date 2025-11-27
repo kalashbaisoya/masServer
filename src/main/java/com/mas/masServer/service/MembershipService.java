@@ -385,8 +385,8 @@ public class MembershipService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PANELIST in C
         } // D/A: No change
         groupRepository.save(group);
     }
@@ -395,8 +395,8 @@ public class MembershipService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(group.getQuorumK() + 1); // Increase for MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(group.getQuorumK() + 1); // Increase for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(group.getQuorumK() + 1); // Increase for PANELIST in C
         } // D: Set by GM separately; A: No change
         groupRepository.save(group);
     }
@@ -496,7 +496,7 @@ public class MembershipService {
         dummyUser.setContactNumber(membership.getMembershipId() + "+" + originalUser.getContactNumber());
         dummyUser.setFirstName(originalUser.getFirstName());
         dummyUser.setLastName(originalUser.getLastName());
-        dummyUser.setRole(originalUser.getRole());
+        dummyUser.setRole(null);
         dummyUser.setIsEmailVerified(false);
         dummyUser.setDateOfBirth(originalUser.getDateOfBirth());
         dummyUser.setPassword("null");
@@ -544,8 +544,8 @@ public class MembershipService {
         GroupAuthType type = group.getGroupAuthType();
         if (type == GroupAuthType.B) {
             group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for MEMBER in B
-        } else if (type == GroupAuthType.C && "PENALIST".equals(roleName)) {
-            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PENALIST in C
+        } else if (type == GroupAuthType.C && "PANELIST".equals(roleName)) {
+            group.setQuorumK(Math.max(0, group.getQuorumK() - 1)); // Decrease for PANELIST in C
         } // D/A: No change
         groupRepository.save(group);
     }

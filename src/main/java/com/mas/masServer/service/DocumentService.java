@@ -250,7 +250,8 @@ public class DocumentService {
                 List<GroupAuthState> onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
                 long onlineMembers = onlineStates.stream()
-                        .filter(state -> "MEMBER".equals(state.getMembership().getGroupRole().getRoleName()))
+                        .filter(state -> "MEMBER".equals(state.getMembership().getGroupRole().getRoleName())
+                    && state.getMembership().getStatus()==MembershipStatus.ACTIVE)
                         .count();
 
                 // Check GM online

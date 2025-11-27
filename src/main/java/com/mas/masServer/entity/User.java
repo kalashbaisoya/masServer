@@ -44,7 +44,7 @@ public class User {
     private Boolean isEmailVerified;
 
     @ManyToOne
-    @JoinColumn(name = "role_id", nullable = false)
+    @JoinColumn(name = "role_id")
     private SystemRole role;
 
     // Constraint: Only one admin
