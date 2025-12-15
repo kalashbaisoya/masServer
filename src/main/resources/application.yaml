@@ -86,4 +86,17 @@ logging:
       total-size-cap: 50MB
       clean-history-on-start: true
 
+BIOMETRIC_AES_KEY: "4uZ+Rz6pZ9oX6qZf5cE+ZbP6ZV4w7Gx+0Xxqg7kC0rU="
+
+
+security:
+  biometric:
+    aes:
+      key: ${BIOMETRIC_AES_KEY}  # Base64 encoded 32-byte key
+
+external:
+  fingerprint:
+    base-url: http://10.14.75.89:5188/api/fingerprint
+
+
 
