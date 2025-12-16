@@ -16,7 +16,7 @@ import org.springframework.security.messaging.access.intercept.MessageMatcherDel
 @Configuration
 @EnableWebSocketSecurity
 public class WebSocketSecurityConfig{
-    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(WebSocketSecurityConfig.class);
 
     @Bean
     AuthorizationManager<Message<?>> messageAuthorizationManager(
@@ -29,7 +29,11 @@ public class WebSocketSecurityConfig{
             .authenticated()
 
             // Secure subscription to specific topic
-            .simpSubscribeDestMatchers("/topic/group/*/membership-status")
+            .simpSubscribeDestMatchers("/topic/group/*/membership-status",
+                                        "/topic/group/*/gc-state",
+                                        "/topic/group/*/auth-state",
+                                        "/topic/group/*/presence",
+                                        "/topic/group/*/chat")
             .access((auth, context) -> {
                 Message<?> message = context.getMessage();
                 String destination = (String) message.getHeaders().get("simpDestination");
@@ -48,7 +52,10 @@ public class WebSocketSecurityConfig{
 
                 // Check if user has appropriate group role
                 boolean authorized = auth.get().getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("GROUP_ROLE_GROUP_MANAGER"));
+                    .map(a -> a.getAuthority())
+                    .anyMatch(role -> role.equals("GROUP_ROLE_GROUP_MANAGER")
+                                   || role.equals("GROUP_ROLE_MEMBER")
+                                   || role.equals("GROUP_ROLE_PANELIST"));
 
                 return new AuthorizationDecision(authorized);
             })

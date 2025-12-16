@@ -22,6 +22,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -83,6 +84,23 @@ public class LoginService {
         response.setMembershipInfo(memInfo);
 
         return response;
+    }
+
+    public boolean isValidUser(String password) {
+        String userMail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailId(userMail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if(!user.getIsEmailVerified()) {
+            throw new RuntimeException("Email Not Verified ");
+        }
+
+        // Validate password
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            return false;
+        }
+
+        return true;
     }
 
     private String generateJwtToken(User user) {

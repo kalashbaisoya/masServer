@@ -21,5 +21,8 @@ public class GroupAuthState {
     private IsOnline isOnline; // Y, N
 
     @Column(nullable = false)
+    private boolean authIntent=false; // true = wants to authenticate
+
+    @Column(nullable = false)
     private LocalDateTime lastUpdated;
 }

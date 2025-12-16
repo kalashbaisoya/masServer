@@ -28,5 +28,17 @@ public interface MembershipRepository extends JpaRepository<Membership,Long> {
 
     List<Membership> findByGroupAndStatusIn(Group group, List<MembershipStatus> status);
 
+
+    Integer countByGroupAndStatusAndGroupRole_RoleNameIn(
+            Group group,
+            MembershipStatus status,
+            List<String> roleNames
+        );
+
+    Integer countByGroupAndStatus(Group group, MembershipStatus active);
+
+    
+
+
     
 }

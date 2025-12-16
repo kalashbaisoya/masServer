@@ -20,6 +20,9 @@ import com.mas.masServer.repository.GroupRepository;
 import com.mas.masServer.repository.GroupRoleRepository;
 import com.mas.masServer.repository.MembershipRepository;
 import com.mas.masServer.repository.UserRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -57,6 +60,9 @@ public class MembershipService {
     
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    private static final Logger logger = LoggerFactory.getLogger(MembershipService.class);
+
 
     @Transactional
     public String updateMembershipStatus(Long groupId, MembershipStatusUpdateRequest request) {
@@ -552,6 +558,7 @@ public class MembershipService {
 
     @Transactional(readOnly = true)
     public void broadcastMembershipStatuses(Long groupId) {
+        logger.debug("I am here in checkHeartbeats()");
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 

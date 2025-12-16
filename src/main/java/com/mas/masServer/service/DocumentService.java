@@ -52,14 +52,16 @@ public class DocumentService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private GroupAuthStateRepository groupAuthStateRepository;
+    // @Autowired
+    // private GroupAuthStateRepository groupAuthStateRepository;
 
     @Autowired
     private MinioClient minioClient;
 
     @Autowired
     private AuditLogService auditLogService; // For logging
+
+    @Autowired QuorumService quorumService;
 
     @Value("${minio.bucket-name}")
     private String bucketName;
@@ -76,6 +78,11 @@ public class DocumentService {
         // Validate group
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
+        // Check group access policy
+        if (!quorumService.isGroupAccessAllowed(group.getGroupId())) {
+            auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Quorum not met", "Access denied");
+            throw new RuntimeException("Access denied: Group quorum requirements not met");
+        }
         // Validate membership
         Membership membership = membershipRepository.findByUserAndGroup(user, group);
         if (membership == null || !MembershipStatus.ACTIVE.equals(membership.getStatus())) {
@@ -205,7 +212,7 @@ public class DocumentService {
         }
 
         // Check group access policy
-        if (!isAccessAllowed(membership.getGroup())) {
+        if (!quorumService.isGroupAccessAllowed(membership.getGroup().getGroupId())) {
             auditLogService.log(user.getUserId(), "document", "access_attempt", null, "Denied: Quorum not met", "Access denied");
             throw new RuntimeException("Access denied: Group quorum requirements not met");
         }
@@ -238,52 +245,52 @@ public class DocumentService {
         return response;
     }
 
-    private boolean isAccessAllowed(Group group) {
-        switch (group.getGroupAuthType()) {
-            case A:
-                return true; // No quorum required
+    // private boolean isAccessAllowed(Group group) {
+    //     switch (group.getGroupAuthType()) {
+    //         case A:
+    //             return true; // No quorum required
 
-            case B:
-                // Require all MEMBER + GM online
-                // long totalMembers = membershipRepository.countByGroupAndGroupRoleRoleName(group, "MEMBER");
-                long totalMembers = group.getQuorumK();
-                List<GroupAuthState> onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
+    //         case B:
+    //             // Require all MEMBER + GM online
+    //             // long totalMembers = membershipRepository.countByGroupAndGroupRoleRoleName(group, "MEMBER");
+    //             long totalMembers = group.getQuorumK();
+    //             List<GroupAuthState> onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
-                long onlineMembers = onlineStates.stream()
-                        .filter(state -> "MEMBER".equals(state.getMembership().getGroupRole().getRoleName())
-                    && state.getMembership().getStatus()==MembershipStatus.ACTIVE)
-                        .count();
+    //             long onlineMembers = onlineStates.stream()
+    //                     .filter(state -> "MEMBER".equals(state.getMembership().getGroupRole().getRoleName())
+    //                 && state.getMembership().getStatus()==MembershipStatus.ACTIVE)
+    //                     .count();
 
-                // Check GM online
-                Membership gmMembership = membershipRepository.findByGroupAndGroupRoleRoleName(group, "GROUP_MANAGER");
-                boolean gmOnline = groupAuthStateRepository.findByMembershipMembershipIdAndIsOnline(gmMembership.getMembershipId(), IsOnline.Y) != null;
+    //             // Check GM online
+    //             Membership gmMembership = membershipRepository.findByGroupAndGroupRoleRoleName(group, "GROUP_MANAGER");
+    //             boolean gmOnline = groupAuthStateRepository.findByMembershipMembershipIdAndIsOnline(gmMembership.getMembershipId(), IsOnline.Y) != null;
 
-                return onlineMembers == totalMembers && gmOnline;
+    //             return onlineMembers == totalMembers && gmOnline;
 
-            case C:
-                // Require all PANELIST + GM online
-                // long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PANELIST");
-                long totalPanelists = group.getQuorumK();
+    //         case C:
+    //             // Require all PANELIST + GM online
+    //             // long totalPanelists = membershipRepository.countByGroupAndGroupRoleRoleName(group, "PANELIST");
+    //             long totalPanelists = group.getQuorumK();
 
-                onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
+    //             onlineStates = groupAuthStateRepository.findByMembershipGroupGroupIdAndIsOnline(group.getGroupId(), IsOnline.Y);
 
-                long onlinePanelists = onlineStates.stream()
-                        .filter(state -> "PANELIST".equals(state.getMembership().getGroupRole().getRoleName()))
-                        .count();
+    //             long onlinePanelists = onlineStates.stream()
+    //                     .filter(state -> "PANELIST".equals(state.getMembership().getGroupRole().getRoleName()))
+    //                     .count();
 
-                // Check GM online
-                gmMembership = membershipRepository.findByGroupAndGroupRoleRoleName(group, "GROUP_MANAGER");
-                gmOnline = groupAuthStateRepository.findByMembershipMembershipIdAndIsOnline(gmMembership.getMembershipId(), IsOnline.Y) != null;
+    //             // Check GM online
+    //             gmMembership = membershipRepository.findByGroupAndGroupRoleRoleName(group, "GROUP_MANAGER");
+    //             gmOnline = groupAuthStateRepository.findByMembershipMembershipIdAndIsOnline(gmMembership.getMembershipId(), IsOnline.Y) != null;
 
-                return onlinePanelists == totalPanelists && gmOnline;
+    //             return onlinePanelists == totalPanelists && gmOnline;
 
-            case D:
-                // Require at least quorumK online (any role)
-                long onlineCount = groupAuthStateRepository.countByMembershipGroupAndIsOnline(group, IsOnline.Y);
-                return onlineCount >= group.getQuorumK();
+    //         case D:
+    //             // Require at least quorumK online (any role)
+    //             long onlineCount = groupAuthStateRepository.countByMembershipGroupAndIsOnline(group, IsOnline.Y);
+    //             return onlineCount >= group.getQuorumK();
 
-            default:
-                return false;
-        }
-    }
+    //         default:
+    //             return false;
+    //     }
+    // }
 }
